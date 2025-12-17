@@ -52,61 +52,49 @@ def affine_transform(qc, c, b):
 def apply_subnibbles_round(qc,
                            state_base=0,
                            workspace_base=32,
-                           output_base=52,
                            draw_mode=None):
-    """
-    Applies the SubNibble layer (multiplicative inverse + affine) IN-PLACE
-    on an existing circuit `qc`, for all 4 state nibbles.
-
-    It reuses the same qubit layout as build_saes_stage1_subnibble:
-
-      state_base .. state_base+15 : state/plaintext (4 nibbles)
-      workspace_base .. workspace_base+19 : workspace (a^2, a^4, a^8, out1, affine_tmp)
-      output_base .. output_base+15: temp output region for inverse (out_final)
-    """
 
     def process_nibble(nibble_index):
-        nibble_start = state_base + 4 * nibble_index
+        nibble_start = state_base + 4*nibble_index
 
-        # state nibble (LSB-first)
+        # state nibble
         a = [nibble_start + i for i in range(4)]
 
-        # workspace slices (same as before)
-        a2 = [workspace_base + i for i in range(4)]        # 32..35
-        a4 = [workspace_base + 4 + i for i in range(4)]    # 36..39
-        a8 = [workspace_base + 8 + i for i in range(4)]    # 40..43
-        out1 = [workspace_base + 12 + i for i in range(4)] # 44..47
+        # workspace registers (16 qubits total)
+        W0 = [workspace_base + i for i in range(4)]        # a2
+        W1 = [workspace_base + 4 + i for i in range(4)]    # a4
+        W2 = [workspace_base + 8 + i for i in range(4)]    # a8
+        W3 = [workspace_base + 12 + i for i in range(4)]   # out1 / inverse
 
-        # affine temporary target
-        affine_tmp = [workspace_base + 16 + i for i in range(4)]  # 48..51
+        # --- compute a^2 → W0 ---
+        gf4_square(qc, a, W0)
 
-        # final inverse storage
-        out_final = [output_base + 4*nibble_index + i for i in range(4)]  # 52..67
+        # --- compute a^4 → W1 ---
+        gf4_square(qc, W0, W1)
 
-        # --- compute inverse into out_final ---
+        # --- compute a^8 → W2 ---
+        gf4_square(qc, W1, W2)
 
-        gf4_square(qc, a, a2)      # a^2
-        gf4_square(qc, a2, a4)     # a^4
-        gf4_square(qc, a4, a8)     # a^8
+        # --- compute out1 = a^8 * a^4 → W3 ---
+        gf4_multiply(qc, W2, W1, W3)
 
-        gf4_multiply(qc, a8, a4, out1)     # out1 = a^8 * a^4
-        gf4_multiply(qc, out1, a2, out_final)  # out_final = out1 * a^2 = a^14
+        # --- compute inverse = out1 * a^2 → W1 ---
+        for i in range(4): qc.reset(W1[i])     # ensure W1 is clean
+        gf4_multiply(qc, W3, W0, W1)           # W1 = a^14
 
-        # --- affine transform: out_final -> affine_tmp ---
-        affine_transform(qc, out_final, affine_tmp)
+        # --- affine transform: W1 → W0 ---
+        for q in W0: qc.reset(q)
+        affine_transform(qc, W1, W0)           # W0 = SubNibble(a)
 
-        # --- write substituted nibble back into the state nibble ---
+        # --- write substituted nibble back into state ---
         for i in range(4):
-            state_q = a[i]
-            src_q = affine_tmp[i]
-            qc.reset(state_q)          # ensure |0>
-            qc.cx(src_q, state_q)      # state_q := affine_tmp[i]
+            qc.reset(a[i])
+            qc.cx(W0[i], a[i])
 
-        # --- clean workspace (optional but keeps ancilla reusable) ---
-        for q in affine_tmp + out_final + out1 + a8 + a4 + a2:
+        # --- cleanup workspace ---
+        for q in W0 + W1 + W2 + W3:
             qc.reset(q)
 
-    # process all four nibbles: N0, N1, N2, N3
-    for nib_index in range(4):
-        process_nibble(nib_index)
-
+    # 4 nibbles
+    for k in range(4):
+        process_nibble(k)
