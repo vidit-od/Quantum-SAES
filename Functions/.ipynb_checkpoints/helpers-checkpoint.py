@@ -46,9 +46,6 @@ def apply_plaintext(qc, plaintext):
         if bit == "1":
             qc.x(i)   # Flip qubit i
 
-    
-    log_gate_stats("Apply plaintext", qc)
-
 
 def add_round_key(qc, key_bits):
     """
@@ -70,3 +67,15 @@ def add_round_key(qc, key_bits):
 
         # Apply XOR: state[i] ^= key[i]
         qc.cx(16 + i, i)
+
+def add_round_key_quantum(qc, key_reg_base, state_reg_base):
+    """
+    Quantum AddRoundKey:
+        state[i] ^= key[i]
+
+    key_reg_base   : starting index of key register (16 qubits)
+    state_reg_base : starting index of state register (16 qubits)
+    """
+
+    for i in range(16):
+        qc.cx(key_reg_base + i, state_reg_base + i)
