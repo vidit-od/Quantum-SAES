@@ -182,6 +182,19 @@ def prince_sbox_classical_reordered(nibble):
 
     return reordered
 
+
+SBOX_REORDERED = [prince_sbox_classical_reordered(_i) for _i in range(16)]
+
+SBOX_REORDERED_INV = [0] * 16
+for _i, _v in enumerate(SBOX_REORDERED):
+    SBOX_REORDERED_INV[_v] = _i
+
+
+def classical_sbox_reordered_inv_nibble(nibble_4bit):
+    """Apply the inverse of the reordered S-box used by quantum_sbox_nibble."""
+    return SBOX_REORDERED_INV[nibble_4bit & 0xF]
+
+
 def classical_s_layer(state_64bit):
     out = 0
     for i in range(16):
@@ -192,11 +205,11 @@ def classical_s_layer(state_64bit):
 
 
 def classical_s_layer_inv(state_64bit):
-    """Apply inverse S-box to all 16 nibbles of the 64-bit state."""
+    """Apply the inverse of classical_s_layer to all 16 state nibbles."""
     out = 0
     for i in range(16):
         nibble = (state_64bit >> (4 * i)) & 0xF
-        out |= classical_sbox_inv_nibble(nibble) << (4 * i)
+        out |= classical_sbox_reordered_inv_nibble(nibble) << (4 * i)
     return out
 
 
@@ -709,4 +722,70 @@ if __name__ == "__main__":
     print()
     print("  NOTE: Stabilizer simulation NOT usable here (Toffoli is non-Clifford).")
     print("        Using Aer matrix_product_state (MPS) method.")
+
+
+# In[ ]:
+
+
+# =============================================================================
+#  QUANTUM INVERSE S-LAYER
+# =============================================================================
+
+_QUANTUM_SBOX_INV_CIRCUIT = None
+
+
+def _get_quantum_sbox_inverse_circuit():
+    """
+    Build and cache the inverse of quantum_sbox_nibble as a reusable circuit.
+
+    quantum_sbox_nibble maps:
+        |x>|0...0>  ->  |S(x)>|0...0>
+
+    Its circuit inverse therefore maps:
+        |S(x)>|0...0>  ->  |x>|0...0>
+    """
+    global _QUANTUM_SBOX_INV_CIRCUIT
+
+    if _QUANTUM_SBOX_INV_CIRCUIT is None:
+        data = QuantumRegister(4, name="data")
+        anc = QuantumRegister(14, name="anc")
+        sbox = QuantumCircuit(data, anc, name="Sbox")
+        quantum_sbox_nibble(sbox, list(data), list(anc))
+        _QUANTUM_SBOX_INV_CIRCUIT = sbox.inverse()
+
+    return _QUANTUM_SBOX_INV_CIRCUIT
+
+
+def quantum_sbox_inverse_nibble(qc, nibble_qubits, ancilla_qubits):
+    """
+    Apply the inverse PRINCE S-box to one 4-qubit nibble in place.
+
+    All 14 ancilla qubits must enter as |0> and are returned to |0>.
+    """
+    if len(nibble_qubits) != 4:
+        raise ValueError("quantum_sbox_inverse_nibble expects exactly 4 data qubits")
+    if len(ancilla_qubits) != 14:
+        raise ValueError("quantum_sbox_inverse_nibble expects exactly 14 ancilla qubits")
+
+    inv_sbox = _get_quantum_sbox_inverse_circuit()
+    qc.compose(inv_sbox, qubits=list(nibble_qubits) + list(ancilla_qubits), inplace=True)
+
+
+def quantum_s_layer_inv(qc, state_reg, ancilla_reg):
+    """
+    Apply the inverse S-layer to the full 64-bit PRINCE state register.
+
+    Nibble i occupies state_reg[4*i .. 4*i+3].  Each nibble uses its own
+    14-qubit ancilla slice ancilla_reg[14*i .. 14*i+13].
+    """
+    if len(state_reg) != 64:
+        raise ValueError("quantum_s_inverse_layer expects a 64-qubit state register")
+    if len(ancilla_reg) != 16 * 14:
+        raise ValueError("quantum_s_inverse_layer expects 224 ancilla qubits")
+
+    for i in range(16):
+        nibble = [state_reg[4 * i + k] for k in range(4)]
+        ancilla = [ancilla_reg[14 * i + k] for k in range(14)]
+        qc.barrier(label=f"S^-1 nibble {i}")
+        quantum_sbox_inverse_nibble(qc, nibble, ancilla)
 
