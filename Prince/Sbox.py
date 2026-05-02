@@ -111,15 +111,14 @@
     Since a0..a3 now hold outputs (not inputs), we use ca0..ca3 (the copies)
     as controls to reverse the Toffoli gates in reverse order.
 
-  Step 6: The 4 input copies (ca0..ca3) hold orig_input on exit.
-    In the full Grover oracle these are cleaned up at the oracle level
-    by the symmetric uncompute pass. For standalone S-box testing,
-    only a0..a3 and the AND ancillas are checked.
+  Step 6: Clear the 4 input copies (ca0..ca3).
+    The inverse S-box is recomputed from the output bits and XOR-ed into
+    the Bennett copies, so all 14 ancillas are |0> on exit.
 
   Resource count per nibble:
     Data qubits    : 4  (in-place, no extra output qubits)
     Ancilla qubits : 14  (4 copies + 10 AND products)
-    Toffoli gates  : 20  (10 forward + 10 uncompute)
+    Toffoli gates  : 40  (20 for S-box + 20 for copy cleanup)
     CNOT gates     : ~30
     X gates        : 3   (constant '1' terms in b0, b1, b3)
 
@@ -215,8 +214,7 @@ def quantum_sbox_nibble(qc, nibble_qubits, ancilla_qubits):
 
     After the function returns:
       nibble_qubits[0..3]  hold S-box output  (was: input nibble bits)
-      ancilla_qubits[4..13] are back to |0>   (AND product ancillas, uncomputed)
-      ancilla_qubits[0..3]  hold the original input  (Bennett copies, used by oracle)
+      ancilla_qubits[0..13] are back to |0>
 
     Parameters
     ----------
@@ -249,8 +247,7 @@ def quantum_sbox_nibble(qc, nibble_qubits, ancilla_qubits):
                         [12] t023 -- a0 AND a2 AND a3
                         [13] t123 -- a1 AND a2 AND a3
                       On exit:
-                        [0..3]  hold original nibble (Bennett copies)
-                        [4..13] are restored to |0>
+                        [0..13] are restored to |0>
     """
 
     # ── Unpack qubit names for readability ────────────────────────────────────
@@ -387,7 +384,69 @@ def quantum_sbox_nibble(qc, nibble_qubits, ancilla_qubits):
 
     # AND ancillas [4..13] are now all |0> ✓
     # ca0..ca3 [0..3] still hold original input bits.
-    # In the full Grover oracle, these are uncomputed at the oracle level.
+    # Recompute the inverse S-box from the output bits and XOR it into the
+    # Bennett copies, so the full ancilla slice is clean before reuse.
+
+    # Current data layout is y0=a0, y1=a1, y2=a2, y3=a3, matching the
+    # reordered classical reference used by classical_s_layer().
+    qc.ccx(a0, a1, t01)
+    qc.ccx(a0, a2, t02)
+    qc.ccx(a0, a3, t03)
+    qc.ccx(a1, a2, t12)
+    qc.ccx(a1, a3, t13)
+    qc.ccx(a2, a3, t23)
+
+    qc.ccx(t01, a2, t012)
+    qc.ccx(t01, a3, t013)
+    qc.ccx(t02, a3, t023)
+    qc.ccx(t12, a3, t123)
+
+    # ANF of inverse(reordered S-box).  XORing these values into ca0..ca3
+    # clears them because they currently hold the same original input bits.
+    qc.cx(a1,   ca0)
+    qc.cx(a2,   ca0)
+    qc.cx(t02,  ca0)
+    qc.cx(a3,   ca0)
+    qc.cx(t123, ca0)
+
+    qc.x(ca1)
+    qc.cx(a1,   ca1)
+    qc.cx(t02,  ca1)
+    qc.cx(t03,  ca1)
+    qc.cx(t13,  ca1)
+    qc.cx(t123, ca1)
+
+    qc.cx(a0,   ca2)
+    qc.cx(a1,   ca2)
+    qc.cx(t01,  ca2)
+    qc.cx(t02,  ca2)
+    qc.cx(a3,   ca2)
+    qc.cx(t13,  ca2)
+    qc.cx(t23,  ca2)
+    qc.cx(t023, ca2)
+
+    qc.x(ca3)
+    qc.cx(t01,  ca3)
+    qc.cx(a2,   ca3)
+    qc.cx(t02,  ca3)
+    qc.cx(t012, ca3)
+    qc.cx(a3,   ca3)
+    qc.cx(t03,  ca3)
+    qc.cx(t013, ca3)
+    qc.cx(t23,  ca3)
+    qc.cx(t023, ca3)
+
+    qc.ccx(t12, a3, t123)
+    qc.ccx(t02, a3, t023)
+    qc.ccx(t01, a3, t013)
+    qc.ccx(t01, a2, t012)
+
+    qc.ccx(a2, a3, t23)
+    qc.ccx(a1, a3, t13)
+    qc.ccx(a1, a2, t12)
+    qc.ccx(a0, a3, t03)
+    qc.ccx(a0, a2, t02)
+    qc.ccx(a0, a1, t01)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -416,8 +475,7 @@ def quantum_s_layer(qc, state_reg, ancilla_reg):
     ancilla_reg : QuantumRegister of exactly 16*14 = 224 qubits.
                   Nibble i uses ancilla_reg[14*i .. 14*i+13].
                   All must be |0> on entry.
-                  On exit: [0..3] of each 14-block hold original nibble;
-                            [4..13] of each 14-block are |0>.
+                  On exit: all 14 qubits of each block are |0>.
     """
     for i in range(16):
         nibble  = [state_reg[4 * i + k] for k in range(4)]
@@ -443,7 +501,7 @@ def simulate(qc, sim):
     Aer returns bitstrings MSB-first, so int(bitstring, 2) gives the
     correct integer (creg[N-1]...creg[0] = most-to-least significant bit).
     """
-    counts = sim.run(transpile(qc, sim), shots=1).result().get_counts()
+    counts = sim.run(qc, shots=1).result().get_counts()
     return int(list(counts.keys())[0], 2)
 
 
@@ -467,7 +525,7 @@ if __name__ == "__main__":
 
     all_pass = True
     for inp in range(16):
-        expected = SBOX[inp]
+        expected = prince_sbox_classical_reordered(inp)
 
         # 4 data qubits + 14 ancilla qubits
         data = QuantumRegister(4,  name='data')
@@ -497,11 +555,11 @@ if __name__ == "__main__":
 
     # ──────────────────────────────────────────────────────────────────────────
     #  TEST 2 — Verify AND ancillas are returned to |0>
-    #  (measure the 10 AND ancillas [4..13] after S-box, expect all zeros)
+    #  (measure the full 14-qubit ancilla slice after S-box)
     # ──────────────────────────────────────────────────────────────────────────
     print()
     print("=" * 62)
-    print("  TEST 2 — AND ancillas returned to |0> after S-box")
+    print("  TEST 2 — All ancillas returned to |0> after S-box")
     print("=" * 62)
 
     anc_all_zero = True
@@ -509,7 +567,7 @@ if __name__ == "__main__":
         data = QuantumRegister(4,  name='data')
         anc  = QuantumRegister(14, name='anc')
         cr_d = ClassicalRegister(4,  name='data_out')
-        cr_a = ClassicalRegister(10, name='anc_out')   # measure AND ancillas only
+        cr_a = ClassicalRegister(14, name='anc_out')
         qc   = QuantumCircuit(data, anc, cr_d, cr_a)
 
         for bit in range(4):
@@ -518,26 +576,26 @@ if __name__ == "__main__":
 
         quantum_sbox_nibble(qc, list(data), list(anc))
 
-        # Measure data and AND ancillas (indices 4..13 of anc register)
+        # Measure data and all ancillas.
         qc.measure(data, cr_d)
-        for k in range(10):
-            qc.measure(anc[4 + k], cr_a[k])
+        for k in range(14):
+            qc.measure(anc[k], cr_a[k])
 
-        counts = sim.run(transpile(qc, sim), shots=1).result().get_counts()
+        counts = sim.run(qc, shots=1).result().get_counts()
         bs = list(counts.keys())[0]
-        # Aer combined bitstring: cr_a (10 bits MSB first) then cr_d (4 bits MSB first)
+        # Aer combined bitstring: cr_a (14 bits MSB first) then cr_d (4 bits MSB first)
         # (Aer orders classical registers right-to-left in the combined string)
         # cr_a is the SECOND register measured, so it appears on the LEFT in combined output
-        anc_bits_str = bs[:10]   # leftmost 10 chars = cr_a
+        anc_bits_str = bs.split(" ")[0] if " " in bs else bs[:14]
         anc_val = int(anc_bits_str, 2)
 
         if anc_val != 0:
             anc_all_zero = False
-            print(f"  S({inp:2d}): AND ancillas = {anc_bits_str}  FAIL <<<")
+            print(f"  S({inp:2d}): ancillas = {anc_bits_str}  FAIL <<<")
         else:
-            print(f"  S({inp:2d}): AND ancillas = {anc_bits_str}  OK")
+            print(f"  S({inp:2d}): ancillas = {anc_bits_str}  OK")
 
-    print(f"\n  All AND ancillas returned to |0>: {anc_all_zero}")
+    print(f"\n  All ancillas returned to |0>: {anc_all_zero}")
 
     # ──────────────────────────────────────────────────────────────────────────
     #  TEST 3 — Full 64-bit S-layer on known test states
@@ -634,7 +692,7 @@ if __name__ == "__main__":
     print("  -- Single nibble S-box --")
     print(f"    Data qubits          : 4  (in-place)")
     print(f"    Ancilla qubits       : 14  (4 copies + 10 AND products)")
-    print(f"    Toffoli (ccx) gates  : {ops.get('ccx', 0):3d}  (10 compute + 10 uncompute)")
+    print(f"    Toffoli (ccx) gates  : {ops.get('ccx', 0):3d}  (20 S-box + 20 cleanup)")
     print(f"    CNOT    (cx)  gates  : {ops.get('cx',  0):3d}")
     print(f"    X             gates  : {ops.get('x',   0):3d}  (constant '1' terms)")
     print(f"    Total gates          : {sum(ops.values()):3d}")

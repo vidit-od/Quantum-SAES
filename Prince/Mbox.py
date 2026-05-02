@@ -80,132 +80,39 @@ from qiskit import QuantumCircuit, QuantumRegister
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _build_prince_M_matrix():
-    """
-    Construct the 64×64 binary M matrix for PRINCE over GF(2).
+    # The 16×16 sub-matrix applied to each nibble-row
+    # M_hat = [[0,1,1,1], [1,0,1,1], [1,1,0,1], [1,1,1,0]] at 4×4 block level
+    # where each entry is a 4×4 identity (1) or zero (0) matrix
 
-    The PRINCE M-layer operates on the state as four 16-bit rows.
-    Within each 16-bit row, a 16×16 binary sub-matrix is applied.
-    The four sub-matrices are SR0, SR1, SR2, SR3 (one per row of the
-    4×4 nibble grid).
-
-    Each 16×16 sub-matrix is built from four 4×4 blocks arranged as:
-        [[A, B],
-         [C, D]]
-    where A,B,C,D are 4×4 binary matrices chosen according to the
-    PRINCE spec (Table 1, M̂ construction).
-
-    The four 4×4 primitive matrices are:
-        M0 = [[0,1,1,1],   (used for SR0 and SR3)
-               [1,0,1,1],
-               [1,1,0,1],
-               [1,1,1,0]]
-
-        M1 = [[1,0,0,0],   (used for SR1 and SR2, off-diagonal blocks)
-               [0,1,0,0],
-               [0,0,1,0],
-               [0,0,0,1]]  (i.e. identity)
-
-    Sub-matrix layout (column-major nibble indexing):
-        Row 0 (nibbles 0,4,8,12)  → SR0  uses M0 on diagonal, 0 elsewhere
-        Row 1 (nibbles 1,5,9,13)  → SR1  uses M1 on diagonal
-        Row 2 (nibbles 2,6,10,14) → SR2  uses M1 on diagonal
-        Row 3 (nibbles 3,7,11,15) → SR3  uses M0 on diagonal
-
-    Returns
-    -------
-    M : list[list[int]]   64×64 binary matrix (list of 64 rows,
-                           each row a list of 64 ints ∈ {0,1})
-    """
-
-    # ── 4×4 primitive matrices ────────────────────────────────────────────────
-    # M0: every off-diagonal entry is 1 (the "all-ones minus identity" matrix)
-    M0 = [
-        [0, 1, 1, 1],
-        [1, 0, 1, 1],
-        [1, 1, 0, 1],
-        [1, 1, 1, 0],
-    ]
-
-    # M1: identity
-    M1 = [
-        [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1],
-    ]
-
-    # Zero 4×4 block
+    I4 = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]
     Z4 = [[0]*4 for _ in range(4)]
 
-    # ── Build the four 16×16 sub-matrices ─────────────────────────────────────
-    # Each sub-matrix acts on one "row" of the 4×4 nibble grid.
-    # Row r contains nibbles r, r+4, r+8, r+12  (column-major order).
-    #
-    # The M̂ (hat) construction from the PRINCE spec:
-    #   SR0 and SR3 use M0 on the block-diagonal, zeros elsewhere.
-    #   SR1 and SR2 use M1 on the block-diagonal, zeros elsewhere.
-    #
-    # Concretely each 16×16 sub-matrix is block-diagonal:
-    #   diag(A, A, A, A)  where A is either M0 or M1.
+    # Build 16×16 M_hat: off-diagonal blocks = I4, diagonal blocks = Z4
+    def block(r, c):
+        return Z4 if r == c else I4
 
-    def block_diag_16(A):
-        """Build a 16×16 matrix from four copies of 4×4 block A on the diagonal."""
-        mat = [[0]*16 for _ in range(16)]
-        for block in range(4):
+    M16 = [[0]*16 for _ in range(16)]
+    for br in range(4):
+        for bc in range(4):
+            blk = block(br, bc)
             for r in range(4):
                 for c in range(4):
-                    mat[block*4 + r][block*4 + c] = A[r][c]
-        return mat
+                    M16[br*4 + r][bc*4 + c] = blk[r][c]
 
-    SR = [
-        block_diag_16(M0),   # row 0 → M0
-        block_diag_16(M1),   # row 1 → M1  (identity → no-op, but kept for structure)
-        block_diag_16(M1),   # row 2 → M1
-        block_diag_16(M0),   # row 3 → M0
-    ]
-
-    # ── Assemble the 64×64 matrix ─────────────────────────────────────────────
-    # State bit layout (column-major nibble order):
-    #   bits  0.. 3 = nibble  0  (row 0, col 0)
-    #   bits  4.. 7 = nibble  1  (row 1, col 0)
-    #   bits  8..11 = nibble  2  (row 2, col 0)
-    #   bits 12..15 = nibble  3  (row 3, col 0)
-    #   bits 16..19 = nibble  4  (row 0, col 1)
-    #   ...
-    #   bits 60..63 = nibble 15  (row 3, col 3)
-    #
-    # Nibble n is in row  (n % 4)  and column  (n // 4).
-    # Its bits occupy state positions [4n .. 4n+3].
-    #
-    # The M-layer applies SR[row_of_nibble] to the 16-bit group that
-    # consists of the four nibbles in that row.
-    #
-    # The four nibbles in row r are: r, r+4, r+8, r+12
-    # Their 16 bits are at positions: [4r, 4r+1, 4r+2, 4r+3,
-    #                                   4r+16, ..., 4r+18,
-    #                                   4r+32, ..., 4r+34,
-    #                                   4r+48, ..., 4r+50]
-    # i.e. for column c ∈ {0,1,2,3}: bits 4*(r + 4*c) .. 4*(r+4*c)+3
-
-    # Start with 64×64 zero matrix
+    # Apply M16 to each of the 4 nibble-rows of the 64-bit state
+    # Nibble-row r contains nibbles r, r+4, r+8, r+12
+    # Their bits: for col c → bits 4*(r + 4*c) .. 4*(r+4*c)+3
     M_full = [[0]*64 for _ in range(64)]
-
-    for row_r in range(4):          # nibble row (0..3)
-        # Collect the 16 bit-indices that belong to this nibble row
+    for row_r in range(4):
         bit_indices = []
-        for col_c in range(4):      # nibble column (0..3)
+        for col_c in range(4):
             nibble_n = row_r + 4 * col_c
             base = 4 * nibble_n
             bit_indices.extend([base, base+1, base+2, base+3])
-        # bit_indices[0..15] are the 16 state bits for this row,
-        # ordered as (col0_bit0, col0_bit1, col0_bit2, col0_bit3,
-        #             col1_bit0, ..., col3_bit3)
-
-        sub = SR[row_r]  # 16×16 sub-matrix for this row
 
         for out_i in range(16):
             for in_j in range(16):
-                if sub[out_i][in_j]:
+                if M16[out_i][in_j]:
                     M_full[bit_indices[out_i]][bit_indices[in_j]] = 1
 
     return M_full
