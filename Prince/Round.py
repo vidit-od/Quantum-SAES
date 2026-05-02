@@ -26,5 +26,10 @@ def quantum_round(Round_Number, qc, state, anc, qk1, RC_i):
 # In[ ]:
 
 
-
+def classical_round(Round_Number, state, k1, RC_i):
+    state = classical_s_layer(state)
+    state = classical_m_layer(state)
+    state ^= RC_i
+    state ^= k1
+    return state
 
