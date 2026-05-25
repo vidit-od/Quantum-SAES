@@ -1,0 +1,954 @@
+Quantum Information Processing (2021) 20:394
+https://doi.org/10.1007/s11128-021-03322-7
+Evaluation of Grover’s algorithm toward quantum
+cryptanalysis on ChaCha
+Bhagwan Bathe 1 · Ravi Anand 2 · Suman Dutta 3
+Received: 25 April 2021 / Accepted: 21 October 2021 / Published online: 19 November 2021
+© The Author(s), under exclusive licence to Springer Science+Business Media, LLC, part of Springer Nature 2021
+Abstract
+In this work, we have analyzed ChaCha against Grover’s search algorithm. We
+designed a reversible quantum circuit of ChaCha and then estimated the resources
+required to implement Grover. We showed that for MAXDEPTH =2
+40, the ChaCha20
+256-bit key can be recovered using Grover’s search algorithm with a gate count of
+1.233 · 2
+251, which is less than the NIST’s requirement of 2 258.W ea l s os h o w e d
+that implementing Grover’s algorithm greatly depends on the number of rounds in
+ChaCha. We deduced that ChaCha would require approximately 166 rounds so that
+implementing a non parallelized Grover would require a 2
+298 gate count. We imple-
+mented a ChaCha-like toy cipher in IBMQ simulator and recovered key using Grover’s
+algorithm.
+Keywords Quantum algorithm · Grover’s algorithm · ChaCha · IBMQ simulator
+1 Introduction
+The symmetric encryption schemes can be categorized as the schemes which are good
+for hardware implementations and those which are good for software implementation.
+ChaCha is an encryption scheme which is good for software implementation. It is a
+general consensus that implementing a software-based cipher in hardware requires
+B Ravi Anand
+ravianandsps@gmail.com
+Bhagwan Bathe
+bathebn@barc.gov.in
+Suman Dutta
+sumand.iiserb@gmail.com
+1 Bhabha Atomic Research Centre (CI), Homi Bhabha National Institute, Mumbai 400094, India
+2 Department of Mathematics, Indian Institute of Technology Kharagpur, Kharagpur 721302, India
+3 Department of Computer Science, Indian Statistical Institute Kolkata, Kolkata 700108, India
+123
+394 Page 2 of 19 B. Bathe et al.
+more amount of resources than a hardware-based cipher. However, if we want to
+study the security of a software-based cipher against quantum algorithms, we have to
+estimate the cost of implementing the cipher in quantum computers.
+ChaCha [7] was designed by Bernstein in 2008 as a reﬁnement of the stream cipher
+Salsa20. Salsa is one of the selected ciphers in the eSTREAM software portfolio.
+Compared to Salsa, in ChaCha the diffusion per round has been increased to achieve a
+high performance during software implementations. The inexpensive operations and
+its relatively fewer resource requirements made it easier to implement on different
+architectures. ChaCha also has a better privacy as compared to Salsa in terms of side-
+channel attack. It has a simple and fast key setup procedure, which made ChaCha
+widely acceptable in the community.
+Recent attacks have shown several problems with CBC-mode cipher suites in TLS
+and DTLS as well as issues with the stream cipher RC4. Because of several attacks
+at the security conferences, Google stopped using ciphers like SSLv3 and RC4. The
+stream cipher ChaCha started getting renewed interest when Google decided to imple-
+ment ChaCha20 for symmetric encryption and Poly1305 for authentication (MAC) in
+OpenSSL and NSS in March 2013.
+Since its inception, several works have been done in the direction of classical
+cryptanalysis of ChaCha. In FSE 2008, Aumasson et al. [ 5] ﬁrst used probabilistic
+neutral bits (PNBs) technique to break ChaCha6 and ChaCha7. In 2013, Shi et al. [19]
+improved the result by considering a new type of distinguishers, called column chain-
+ing distinguishers (CCD). In WCC 2015, Maitra et al. [ 16] provided interpretation
+based on Fisher’s 2006 result by including the key bits in the PNB set which results
+lesser probability for distinguishing. Cryptanalysis on reduced round of ChaCha by
+exploiting speciﬁc chosen IVs corresponding to the secret key was done by Maitra [15]
+in 2016. Further work of Choudhuri et al. [9] improved the result by considering hybrid
+model for the evaluation of the differential cryptanalysis of ChaCha and claimed that
+ChaCha12 with 256-bit keys is secure against certain kinds of differential cryptanaly-
+sis. Improved algorithm, for the construction of PNBs and modiﬁed complexities for
+the cryptanalysis of ChaCha were given by Dey et al. [ 11]. All these studies clearly
+suggest that higher rounds of ChaCha (for example ChaCha20) are absolutely secure
+against the classical attacks. Although there have been a lot of studies regarding the
+classical cryptanalysis of ChaCha, surprisingly not enough work has been done in the
+direction of quantum cryptanalysis of the same.
+We would also like to bring attention to the work done by Aumasson [Subsection 5.2,
+[6]] where the author has stated: “Grover’s search (and other quantum cryptanalysis
+techniques) is mostly independent of the number of rounds ...” and has discussed
+how some of the ciphers, including ChaCha has a very large margin of security in
+even while considering quantum attacks. So, in our work, we completely appreciate
+the point raised by the author in [ 6] and accept that quantum computers are still
+elusive, and at the same time, there are several papers [ 1–3,10,12,14,17,18] where the
+resources and gate counts are understood based on Grover’s algorithm as well as the
+metrics provided by NIST [ 21]. Further, a cipher with a lower amount of hardware
+will be considered as more vulnerable in the Quantum paradigm because the quantum
+computers are in the evolving stage, and thus technology will move toward building
+more efﬁcient quantum computers over the next few decades, and ciphers with less
+123
+Evaluation of Grover’s algorithm toward… Page 3 of 19 394
+amount of hardware will attract sharper cryptanalysis in limited resource if we use
+Grover directly.
+So, there is a requirement to study ciphers under the recommendation provided by
+NIST and based on these observations we ﬁnd that ChaCha requires 166 rounds to be
+secure against the recommendations provided by NIST, (Subsection2.4). We also show
+that with MAXDEPTH=240, ChaCha20 key can be recovered using the Grover’s search
+algorithm with a gate count of 1 .233 · 2251, which less than the NIST’s requirement
+of 2 258. This paper could serve as a starting point for estimating gate counts for the
+quantum implementations of software-based stream ciphers like ChaCha.
+Although an error-free, commercial quantum computer is elusive at the present
+time frame, we have implemented a toy version of the circuit in the IBMQ simulator
+and also recovered the secret key using Grover’s algorithm on this toy version.
+1.1 Brief description of ChaCha stream cipher
+ChaCha maps a 512-bit input block to a 512-bit output key stream. The state is built
+by arranging data in a 4 × 4m a t r i xM where each element is a 32-bit word. M is
+initialized as:
+M =
+⎛
+⎜⎜⎜⎜⎝
+x0 x1 x2 x3
+x4 x5 x6 x7
+x8 x9 x10 x11
+x12 x13 x14 x15
+⎞
+⎟⎟⎟⎟⎠
+=
+⎛
+⎜⎜⎜⎜⎝
+c0 c1 c2 c3
+k0 k1 k2 k3
+k4 k5 k6 k7
+cnt i v0 iv1 iv2
+⎞
+⎟⎟⎟⎟⎠
+. (1)
+The initial state M consists of 128-bit predeﬁned constants c0, c1, c2, c3, 32-bit block
+counter cnt , 96-bit nonce iv0, iv1, iv2 and 256-bit key k0, k1,··· k7. In case the key
+length is 128-bit the key is copied in both second and third rows, i.e.,(k0, k1, k2, k3) =
+(k4, k5, k6, k7).
+The core function is deﬁned by iterating several rounds on the input blocks,
+where each round consists of four parallel quarterround operations. Each of
+quarterround(a, b, c, d) consists of four ARX rounds, each of which comprises of
+addition modulo 2 n (⊞), cyclic left rotation and XOR ( ⊕ ) operation (one each) as
+given below: ⎧
+⎪⎪
+⎪
+⎪⎪⎨
+⎪⎪
+⎪
+⎪
+⎪⎩
+a = a ⊞ b; d = d ⊕ a; d = d ≪ 16;
+c = c ⊞ d; b = b ⊕ c; b = b ≪ 12;
+a = a ⊞ b; d = d ⊕ a; d = d ≪ 8;
+c = c ⊞ d; b = b ⊕ c; b = b ≪ 7;
+(2)
+Each columnround consists of four quarterrounds on each of the four columns of
+the state matrix and each diagonalround consists of four quarterrounds on each of the
+four diagonals. In ChaCha R,
+R/2 columnround, and R/2 diagonalround are applied
+alternatively to the initial state (total R many rounds, where R could be 20, 12).
+123
+394 Page 4 of 19 B. Bathe et al.
+In each of the odd rounds, we ﬁrst apply quarterround to all the four columns in
+the following order:
+⎧
+⎪⎪
+⎪
+⎨
+⎪⎪⎪⎩
+quarterround (x
+0, x4, x8, x12);
+quarterround (x1, x5, x9, x13);
+quarterround (x2, x6, x10, x14);
+quarterround (x3, x7, x11, x15);
+This is a complete columnround. In each of the even rounds, we apply quarterround to
+all the four diagonals in the following order:
+⎧
+⎪⎪
+⎪
+⎨
+⎪⎪
+⎪
+⎩
+quarterround (x
+0, x5, x10, x15);
+quarterround (x1, x6, x11, x12);
+quarterround (x2, x7, x8, x13);
+quarterround (x3, x4, x9, x14);
+This describes a complete diagonalround.
+Let the state after R rounds be M R . A keystream block of 16 words or 512 bits is
+obtained as Z = M ⊞ M R .
+1.2 Stream cipher key recovery using Grover
+Let for any key, K ={ 0, 1}k and initial value, IV ={ 0, 1}96, SK,IV = ks ,b et h e
+512-bit keystream generated by the ChaCha stream cipher S. For a known keystream
+ks generated by a secret key K0 we can apply Grover’s search for key recovery as
+follows:
+1. Construct a Boolean function f which takes K, IV as input and satisﬁes
+f (K) =
+{
+1i f SK,IV = ks
+0 otherwise
+2. Initialize the system by making a superposition of all possible keys of equal ampli-
+tudes.
+|K⟩= 1
+2K/2
+2K − 1∑
+j=0
+|K j⟩ .
+(a) For any state |K j⟩ in the superposition |K⟩, rotate the phase by π radians if
+f (K j) = 1 and leave the system unaltered otherwise.
+(b) Apply the diffusion operator.
+3. Iterate 2 (a), (b) for O(2k/2) times.
+123
+Evaluation of Grover’s algorithm toward… Page 5 of 19 394
+4. Measure the system and observe the state K = K0 with probability atleast ( 1
+2),
+where K0 is the secret key.
+In most cases, it is considered that the IV is known to the adversary so the ﬁrst step
+can be modiﬁed so that the function f takes only K as input and satisﬁes f (K) = 1,
+if SK generates the given keystream ks .
+From [8], we know that when measuring thek key qubits after iterating the Grover’s
+oracle for ı ≥ 0 iterations, then the success probability p(ı) of obtaining the correct
+key K0 is given by p(ı) = sin2((2ı + 1)θ), where sin 2(θ) = 1/2k . Since 1 /2k is
+negligibly small, we have θ ≈ sin(θ) =
+√
+1/2k . The probability p(ı) is close to 1 if
+ı ≈ π
+4θ. Hence after approximately π
+4 2k/2 iterations, we obtain the correct key with a
+very high probability.
+1.3 Resource estimation under a depth limit
+In this work, we are focused on estimating the cost of implementing Grover’s search
+algorithm on ChaCha under NIST’s MAXDEPTH. Grover’s full algorithm parallelizes
+very badly. So, we use the inner parallelization as described by Kim, Han, and
+Jeong [ 13]. In inner parallelization, the seacrh space is divided into disjoint subsets
+and each subset is assigned to a different machine. Since each machine’s search space
+is smaller, the required number of iterations is smaller.
+The original search space has size 2
+k , where k is the key size. Let us assume that
+we use a Grover’s oracle O such that a single Grover’s iteration costs Og gates and
+has a depth Od . Also, assume that M = 2m be the number of machines that are used
+in parallel by dividing the search space into M disjoint sets.
+Since the search space is now reduced to 2 k− m for each machine, hence we can
+expect that one of the machines will recover the correct key after approximately ım =
+π
+4 2
+k− m
+2 iterations, with a very high success probability. Then, the total depth of ım
+Grover iterations will be
+Dm = ım × Od ≈ π
+4 2
+k− m
+2 Od (3)
+Each of the M machines will be using ım × Og gates for ım iterations and thus the
+total gate cost over all M machines will be
+Gm = 2m ım × Og ≈ π
+4 2
+k+m
+2 Og (4)
+Now let us ﬁx the depth limit to MAXDEPTH. Then from Eq. 3, we will have
+MAXDEPTH = π
+4 2
+k− m
+2 Od
+/equal1⇒M = 2m =
+( π
+4
+) 2
+2k O2
+d
+MAXDEPTH2
+(5)
+123
+394 Page 6 of 19 B. Bathe et al.
+Using this value in Eq.4, we obtain the total gate cost under theMAXDEPTH restriction
+as
+G MD =
+( π
+4
+) 2
+2k Og Od
+MAXDEPT H (6)
+We will use these values to compute the cost of implementing Grover’s search on
+ChaCha under NISTs MAXDEPTH limit in Sect. 2.3.4.
+Contribution and Organization The main contributions of this work are as fol-
+lows.
+– In Sect. 2, we provide the reversible quantum circuits of ChaCha. We estimate the
+cost of applying Grover for key recovery in Table 3 and then estimate it under the
+NISTs MAXDEPTH constraint in Table 4. We ﬁnd that an attack using the Grover’s
+key search algorithm has a gate count complexity 1.233·2251 for 20 rounds ChaCha
+and 1.859 · 2249 for 12 rounds ChaCha, with MAXDEPTH =2 40. As an immediate
+observation, we ﬁnd the relation between the number of rounds and the gate count
+estimation for applying Grover’s algorithm.
+– In Sect. 3, we implement the Grover’s search algorithm on a toy version of ChaCha
+in the IBMQ environment and successfully recovered the desired key. The neces-
+sary circuit representations are also given using Qiskit.
+In Sect. 4, we conclude the paper.
+All the codes for the results on the toy cipher are provided in a public repository [23]
+for independent veriﬁcation of our results.
+2 Resource estimation of ChaCha
+We construct a reversible quantum circuit for implementation of the cipher. We then
+provide the resource estimation for this construction in terms of number of qubits,
+Toffoli gates, CNOT gates and the depth of the circuit in Table 1.
+We have assumed full parallelism while constructing the circuits, i.e., any num ber
+of gates can be applied in the circuit simultaneously if these gates act on dis joint set
+of qubits. The circuits were implemented in IBMQ simulator and this compiler allows
+us to compute the depth of the circuit automatically. It has been generally observed
+that the depth of two circuits applied in series is less than or equal to the sum of the
+depth of the individual circuits.
+2.1 Quantum implementation of XOR, rotation, and addition modulo 2
+n
+The ARX ciphers makes use of the following operations
+– bitwise XOR, ⊕
+– left and right circular shifts (rotations), S j and S− j , respectively, by j bits, and
+– addition modulo 2 n , ⊞.
+123
+Evaluation of Grover’s algorithm toward… Page 7 of 19 394
+Component-wise XOR of two n-bit numbers a and b can be implemented using
+n many CNOT gates in a quantum circuits i.e. {b = a ⊕ b}= CNOT{ai, bi} for
+i ∈{ 0, 1,..., n − 1}.
+Rotation of any number can be implemented by swapping values across wires
+which can be done by simply keeping track of the necessary free rewiring. So, in the
+estimations, these gates are disregarded as free.
+For addition we use the circuit described in [20] as it uses no ancilla. To implement
+a = a ⊞ b where a = a0a1 ... an− 1 and b = b0b1 ... bn− 1 are two n-bit numbers, the
+circuit construction is described in Algorithm 1.
+Algorithm 1 Implementing addition modulo 2 n [20]
+1: procedure ADD(a, b): a = a ⊞ b
+2: for i ← 1, n − 1 do
+3: CNOT {bi , ai }
+4: end for
+5: for i ← n − 1, 1 do
+6: CNOT {bi , bi+1}
+7: end for
+8: for i ← 0, n − 1 do
+9: Toffoli{ai , bi , bi+1}
+10: end for
+11: for i ← n − 1, 1 do
+12: CNOT {bi , ai }
+13: Toffoli{ai− 1, bi− 1, bi }
+14: end for
+15: for i ← 1, n − 2 do
+16: CNOT {bi , bi+1}
+17: end for
+18: for i ← 0, n − 1 do
+19: CNOT {bi , ai }
+20: end for
+21: end procedure
+To implement addition modulo 2 n , we only need to remove one CNOT gate and
+one Toffoli gate associated with an .
+Proposition 1 [20] Addition modulo 2n requires 5n − 6 CNOT gates, 2n − 2 Toffoli
+gates.
+The circuit for addition modulo 2 n , with n = 3 and a = 001, b = 010 has been
+implemented in IBMQ, as shown in Fig. 1.
+2.2 Quantum circuit for the ChaCha
+We now describe the construction of a reversible quantum circuit for ChaCha with
+key size 256 and rounds R =[ 12, 20]. As described above, ChaCha has two major
+components: the quarterround routine and the last step in which the initial state is
+added to the state we get after the R round of updates. We have given the circuit for
+full ChaCha for R rounds.
+123
+394 Page 8 of 19 B. Bathe et al.
+Fig. 1 a Circuit for implementing a = a ⊞ b. b Result obtained after measurement when inputs were
+a = 001, b = 010
+2.2.1 Circuit for quarterround
+The quarterround(a, b, c, d) routine is deﬁned as
+a = a ⊞ b; d = d ⊕ a; d = d ≪ 16;
+c = c ⊞ d; b = b ⊕ c; b = b ≪ 12;
+a = a ⊞ b; d = d ⊕ a; d = d ≪ 8;
+c = c ⊞ d; b = b ⊕ c; b = b ≪ 7;
+where a, b, c, d are n-bit numbers. So we need 4n qubits to store the values ofa, b, c, d.
+The circuit can be constructed as described in Algorithm 2 and in Fig. 2.
+Algorithm 2 Implementing quarterround
+1: procedure quarterround(a, b, c, d)
+2: ADD(a, b) ⊿ ADD as desribed in Algorithm 1
+3: for i ← 0, n − 1 do
+4: CNOT {ai , di }
+5: end for
+6: RL16(d) ⊿ RLn(x) → left rotate x by n bits
+7: ADD(c, d)
+8: for i ← 0, n − 1 do
+9: CNOT {ci , bi }
+10: end for
+11: RL12(b)
+12: ADD(a, b)
+13: for i ← 0, n − 1 do
+14: CNOT {ai , di }
+15: end for
+16: RL8(d)
+17: ADD(c, d)
+18: for i ← 0, n − 1 do
+19: CNOT {ci , bi }
+20: end for
+21: RL7(b)
+22: end procedure
+123
+Evaluation of Grover’s algorithm toward… Page 9 of 19 394
+|a⟩
+ADD
+•
+ADD
+•
+|b⟩ RL12 RL7
+|c⟩
+ADD
+•
+ADD
+•
+|d⟩ RL16 RL8
+Fig. 2 Circuit for quarterround(a, b, c, d),w h e r e|a⟩ , |b⟩, |c⟩, |d⟩ are quantum states of size n. ADD is
+the adder circuit described in Algorithm 1. RLn stands for rotate-left by n bits
+Proposition 2 The circuit for one quarterround routine requires 4∗(5∗32− 6)+ 4∗
+32 = 744 CNOT gates, 4∗(2∗32− 2) = 248 Toffoli gates. One round of ChaCha has 4
+quarterround routines, and so requires4∗744 = 2976 CNOT gates and 4∗248 = 992
+Toffoli gates.
+2.2.2 Circuit for the last step
+The last step of ChaCha is to add the initial state with the ﬁnal state obtained after R
+rounds. For this, we need 16 × 32 qubits which stores a copy of the initial state, which
+can be done using CNOT gates,
+⎛
+⎜⎜⎝
+x0 x1 x2 x3
+x4 x5 x6 x7
+x8 x9 x10 x11
+x12 x13 x14 x15
+⎞
+⎟⎟⎠ =
+⎛
+⎜⎜⎝
+c0 ⊕ x′
+0 c1 ⊕ x′
+1 c2 ⊕ x′
+2 c3 ⊕ x′
+3
+k0 ⊕ x′
+4 k1 ⊕ x′
+5 k2 ⊕ x′
+6 k3 ⊕ x′
+7
+k4 ⊕ x′
+8 k5 ⊕ x′
+9 k6 ⊕ x′
+10 k7 ⊕ x′
+11
+cnt ⊕ x′
+12 iv0 ⊕ x′
+13 iv1 ⊕ x′
+14 iv2 ⊕ x′
+15
+⎞
+⎟⎟⎠ . (7)
+The values of x′
+i s in the right matrix of Eq. 7 are initialized to zero and so the matrix
+on the left is a copy of the initial state. This matrix is added to the ﬁnal state matrix to
+generate the keystream.
+Proposition 3 The last step requires16 ADD operations, and so the number of CNOT
+gates and Toffoli gates required for this step, are 2464 and 992 respectively.
+2.2.3 Circuit for full ChaCha
+To implement ChaCha we need 16 quantum states of size 32, and another 16 quantum
+states of size 32 to store the copy of initial state for the last step. The circuit for full
+ChaCha is described in Fig. 3.
+Proposition 4 The complete circuit for ChaCha R requires [(R × 2976) + 2464]
+CNOT gates and [(R × 992) + 992] Toffoli gates.
+2.3 Resource estimation
+2.3.1 Cost of implementing ChaCha
+We ﬁrst estimate the cost implementing ChaCha as a circuit. We have not included the
+number of NOT gates required to initialize the states in our estimates as it depends on
+123
+394 Page 10 of 19 B. Bathe et al.
+Repeat these R/2 times Last step
+|x0⟩
+qtr
+qtr
+···
+⏐⏐xR
+0
+⟩
+ADD
+|z0⟩
+|x′
+0⟩
+|x4⟩
+qtr
+···
+⏐⏐xR
+4
+⟩
+ADD
+|z4⟩
+|x′
+4⟩
+|x8⟩
+qtr
+···
+⏐⏐xR
+8
+⟩
+ADD
+|z8⟩
+|x′
+8⟩
+|x12⟩
+qtr
+···
+⏐⏐xR
+12
+⟩
+ADD
+|z12⟩
+|x′
+12⟩
+|x1⟩
+qtr
+···
+⏐⏐xR
+1
+⟩
+ADD
+|z1⟩
+|x′
+1⟩
+|x5⟩ ···
+⏐⏐xR
+5
+⟩
+ADD
+|z5⟩
+|x′
+5⟩
+|x9⟩ ···
+⏐⏐xR
+9
+⟩
+ADD
+|z9⟩
+|x′
+9⟩
+|x13⟩ ···
+⏐⏐xR
+13
+⟩
+ADD
+|z13⟩
+|x′
+13⟩
+|x2⟩
+qtr
+···
+⏐⏐xR
+2
+⟩
+ADD
+|z2⟩
+|x′
+2⟩
+|x6⟩ ···
+⏐⏐xR
+6
+⟩
+ADD
+|z6⟩
+|x′
+6⟩
+|x10⟩ ···
+⏐⏐xR
+10
+⟩
+ADD
+|z10⟩
+|x′
+10⟩
+|x14⟩ ···
+⏐⏐xR
+14
+⟩
+ADD
+|z14⟩
+|x′
+14⟩
+|x3⟩
+qtr
+···
+⏐⏐xR
+3
+⟩
+ADD
+|z3⟩
+|x′
+3⟩
+|x7⟩ ···
+⏐⏐xR
+7
+⟩
+ADD
+|z7⟩
+|x′
+7⟩
+|x11⟩ ···
+⏐⏐xR
+11
+⟩
+ADD
+|z11⟩
+|x′
+11⟩
+|x15⟩ ···
+⏐⏐xR
+15
+⟩
+ADD
+|z15⟩
+|x′
+15⟩
+Fig. 3 Circuit for ChaCha, where R =[ 20, 12]
+the given constant and nonce. Table 1 gives the cost estimates of implementing both
+the ChaCha variants.
+123
+Evaluation of Grover’s algorithm toward… Page 11 of 19 394
+Table 1 Cost of implementing
+ChaCha variants # CNOT # Toffoli # qubits Full depth
+ChaCha 12 38176 12896 1024 7643
+ChaCha 20 61984 20832 1024 12635
+⏐⏐0512⟩
+ENC
+|ks⟩
+• ENC †
+⏐⏐0512⟩
+|−⟩ = |−⟩
+Fig. 4 Grover oracle for stream ciphers. The (=) operator compares the output of the ENC with the given
+keystreams and ﬂips the target qubit if they are equal
+2.3.2 Cost of Grover’s oracle
+The Grover’s oracle consists of producing a superposition of keystreams that can be
+generated from all possible keys and given constants and IV . Then the keystream is
+matched to the given keystream and the target qubit is ﬂipped if the keystream matches.
+So, this oracle consists of the circuit of the cipher that produces the keystream and then
+this circuit needs to be uncomputed so that the next iteration can be run. We denote
+the cipher instance as ENC . Uncomputation of ENC is denoted by ENC
+†. The oracle
+is constructed as shown in Fig. 4
+T h eo r a c l ei nF i g .4 is different from the oracle generally constructed for block
+ciphers, as described in [ 12, Figure 6]. However, we can show that the key retrieved
+from this oracle which uses only one instance of the cipher, instead of multiple cipher
+instances used for block ciphers, is unique.
+Uniqueness of the Key Retrieved: Let us ﬁrst discuss the scenario for a block cipher.
+We assume a block cipher that has been initialized with a key K of size k and has a
+block size of k bits to be a pseudo random permutation (PRP) CK :{ 0, 1}k →{ 0, 1}k
+that takes a message M of size k bit and outputs a cipher text of the same size. Then
+if we generate t-blocks of cipher text corresponding to a message, then we have the
+following collision probability
+Pr
+K̸=K′
+(
+CK (M1)||CK (M2)... ||CK (Mt)
+= CK′ (M1)||CK′(M2)... ||CK′ (Mt)
+)
+≈ 2k − 1
+t∏
+i=1
+1
+2k − i − 1.
+Even if we set t = 2 then we have a negligibly low probability of collisionO
+(
+2− k)
+.
+Now let us consider the case of stream ciphers. Suppose a stream cipher has a key
+of size k bits. Then we can design the following function ˆCρ(K) :{ 0, 1}k →{ 0, 1}ρ
+which takes in the key K and outputs ρ bits of keystream. Then we can safely assume
+Pr
+K̸=K′
+(
+ˆCρ(K) = ˆCρ(K′)
+)
+≈ 2k − 1
+2ρ .
+123
+394 Page 12 of 19 B. Bathe et al.
+Even if we setρ = k+c for some constant c, the collision probability is approximately
+O
+(
+2− c)
+. Then even for c = k we have a very low probability of collision and thus
+less false positive. Hence we can say that the oracle described in Fig. 4 will retrieve
+the required key uniquely.
+We now describe the process of computing the cost of the Grover’s oracle. It has
+generally been assumed that the logical T gate is signiﬁcantly more expensive than
+the Clifford group gates on the surface code and so while estimating the resources we
+provide the costs for T gates only as well as the cost of circuit considering all gates
+equally. While computing the T-depth of a circuit, we assume that all gates have a
+depth of 0 except the T gate, which is assigned a depth of 1 and for the full depth we
+assign a depth of 1 to all the gates.
+We decompose the Toffoli gates into the set of Clifford+ T gates using the decom-
+position provided by [ 4] that requires 7 T gates and 8 Clifford gates, a T depth of 4
+and total depth 8.
+We estimate the cost of constructing the Grover’s oracle in terms of number of
+Clifford and T gates, T depth and the full depth (D). The number of Clifford gates
+required for the oracle of stream ciphers is the number of the Clifford gates required
+for the cipher used in the oracle. The total number of Clifford gates is computed as
+2 · # Clifford gates for {(ENC )}. (8)
+The Grover’s oracle consists of comparing the 512-bit outputs of the cipher with the
+given 512-bit keystreams. This can be done using (512)-controlled CNOT gates (we
+neglect some NOT gates which depend on the given cipher-texts). Following [ 22],
+we estimate the number of T gates required to implement a t-fold controlled CNOT
+gates as (32 · t − 84). The total number of T gates is computed as
+(32 · 512 − 84) + 2 · # T gates for {(ENC
+)}. (9)
+To estimate the full depth and theT -depth we only consider the depths of the cipher
+instances. The depth of the Grover’s oracle is
+The depth of the oracle = 2 · (Depth of ENC ). (10)
+Using Eqs. 8, 9, 10 the cost estimates for the Grover’s oracle are presented in
+Table 2.
+Table 2 Cost of the Grover’s oracle for ChaCha
+# Clifford gates # T gates Gate Cost (Og) T -depth Full depth (Od) # qubits
+ChaCha 12 282688 188972 471660 23808 54878 1025
+ChaCha 20 457280 300076 757356 39680 90718 1025
+123
+Evaluation of Grover’s algorithm toward… Page 13 of 19 394
+Table 3 Cost estimates of Grover’s algorithm with π
+4 2k/2 oracle iterations for ChaCha
+k Cipher # Clifford gates # T gates GT -depth Full depth (D) # qubits
+256 ChaCha 12 1 .694 · 2145 1.132 · 2145 1.413 · 2146 1.141 · 2142 1.315 · 2143 1025
+ChaCha 20 1 .370 · 2146 1.798 · 2145 1.135 · 2147 1.902 · 2142 1.087 · 2144 1025
+128 ChaCha 12 1 .694 · 281 1.108 · 281 1.401 · 282 1.141 · 278 1.315 · 279 1025
+ChaCha 20 1 .370 · 282 1.774 · 281 1.128 · 283 1.902 · 278 1.087 · 280 1025
+G is the addition of # Clifford and # T gates
+2.3.3 Cost of exhaustive key search
+Using the estimates in Table 2, of the Grover’s oracle, we provide the cost estimates
+for the full exhaustive key search on ChaCha in Table 3. We consider π
+4 2k/2 iterations
+of the Grover’s operator. We have not included the cost of putting all key bits in
+superposition using Hadamard gates.
+2.3.4 Cost of Grover’s search under NISTs MAXDEPTH limit
+In this work we assume that an adversary is bounded by a constraint on the depth of
+the circuit that (s)he can use for Grover. NIST suggests a parameter MAXDEPTH as
+such a bound and the plausible values range from 2 40 to 296.
+From [21]
+1. In, Page 16, it is stated: “In particular, NIST will deﬁne a separate category for each
+of the following security requirements (listed in order of increasing strength): 1)
+Any attack that breaks the relevant security deﬁnition must require computational
+resources comparable to or greater than those required for key search on a block
+cipher with a 128-bit key (e.g., AES128).”
+2. In Page 18, it is stated: “NIST provides the estimates for optimal key recovery for
+AES256 as 2
+298/MAXDEPTH.”
+So, for a MAXDEPTH of 2 40, a cipher can be considered VULNERABLE if there
+exists any attack with gate count < 2258 for ciphers with key size 256.
+The cost estimates provided by NIST is deduced from the results in [17]. In Table4,
+we provide the gate counts for Grover’s search on both the ciphers under the constraint
+of MAXDEPTH. These counts are computed using Eq. 6.
+Table 4 Cost of Grover’s search on the ciphers with key size 256 under MAXDEPTH
+G MD for MAXDEPTH G MD ∗MAXDEPTH
+240 264 296
+NIST[21]2 258 2234 2202 2298
+ChaCha 12 1 .859 · 2249 1.859 · 2225 1.859 · 2193 1.859 · 2289
+ChaCha 20 1 .233 · 2251 1.233 · 2227 1.233 · 2195 1.233 · 2291
+AES[12]1 .39 · 2245 1.39 · 2221 1.39 · 2190 ≈ 2285
+123
+394 Page 14 of 19 B. Bathe et al.
+2.4 Are the number of rounds enough?
+From above descriptions we can calculate that one round of state update requires the
+following resources: 10912 Clifford gates, 6944 T gates and has depth 2240. So, for R
+rounds the circuit will have R ·(10912+ 6944) number of gates and depth (R · 2240).
+The last step of adding the initial state to the state obtained after R rounds requires
+(10400 + 6944) gates and depth 559.
+It should be noted here that we do not assume full parallelism and have not consid-
+ered some extra overheads which might be required while running the full Grover’s
+iterations and also have ignored multiplication by
+π
+4 . These assumptions will, however,
+amount to only a difference of constant amount.
+Let us consider that 2 x is the security parameter which is the minimum amount
+of gate counts required to mount a quantum attack to call a cipher secure. Then the
+following should be satisﬁed:
+2x ≤ G · D
+⇒ 2x ≤ (2128 · 2 · (R · (10912 + 6944) + (10400 + 6944)))
+· (2128 · 2 · (R · 2240 + 559))
+⇒ 2x ≤ 2258 · (R · 17856 + 17344)(R · 2240 + 559)
+⇒ 2x− 258 ≤ (R · 17856 + 17344)(R · 2240 + 559).
+Now we can make the following observations:
+1. The NIST’s requirement is x = 298. For R = 166, we have(R·17856+17344)(R·
+2240+ 559) ≈ 1.009· 240, which means the number of rounds ChaCha must have,
+to be secure, is atleast 166.
+2. From [ 17], we have x = 296, and for R = 83, we have (R · 17856 + 17344)(R ·
+2240+ 559) ≈ 1.017· 238, which means the number of rounds ChaCha must have,
+to be secure, is 83.
+3. From [ 14], we have x = 291, and for R = 15, we have (R · 17856 + 17344)(R ·
+2240+ 559) ≈ 1.134· 233, which means the number of rounds ChaCha must have,
+to be secure, is 15.
+4. If we consider the most recent resource count of implementing Grover’s algorithm
+on AES described in [ 12], then x = 285. For R = 2, we have (R · 17856 +
+17344)(R · 2240+ 559) ≈ 1.992· 227, which means the number of rounds ChaCha
+must have, to be secure, is 2.
+We can see here that depending on the security parameters, the round numbers varies
+from 2 to 166.
+123
+Evaluation of Grover’s algorithm toward… Page 15 of 19 394
+Fig. 5 a Circuit for implementing quarterround (con, iv0). b Measurement for inputs, con = 001, iv0 =
+010. Read the output (011100) as (con, iv0)
+3 Implementing Grover’s search on a ChaCha like toy ciper
+In this section, we implement a ChaCha like toy cipher in the IBMQ interface. We
+show that the above mentioned construction of the cipher can be used to construct a
+toy cipher and successfully extract the key using the Grover’s algorithm. To ﬁnd the
+secret key, we have assumed that we are given a keystream and the IV .
+3.1 Toy ChaCha like cipher
+Now we give an implementation of a toy ChaCha like cipher in Qiskit.
+Assume, the initial state is
+M =
+( con i v1
+iv0 key
+)
+=
+( 001 100
+010 111
+)
+. (11)
+The quarterround(a, b) is deﬁned as
+quarterround (a, b) : a = a ⊞ b; b = b ⊕ a; b ≪ 2.
+The circuit for quarterround(con, iv0) as implemented in IBMQ is shown in Fig. 5.
+Then we apply a column round and a diagonal round as follows:
+⎧
+⎪⎪
+⎪⎨
+⎪⎪
+⎪
+⎩
+quarterround (con, iv0);
+quarterround (iv1, key);
+quarterround (key, con);
+quarterround (iv
+0, iv1);
+(12)
+and we obtain the state
+M f =
+( con f iv1 f
+iv0 f key f
+)
+=
+( 011 010
+111 101
+)
+. (13)
+123
+394 Page 16 of 19 B. Bathe et al.
+Fig. 6 The circuit of toy ChaCha with the initial state deﬁned in Eq. 11
+Fig. 7 The output of the circuit
+implemented in Fig. 6. Read the
+output (100001110100) as
+(con, iv0, iv1, key)
+And ﬁnally the block of key stream is obtained as Z = M ⊞ M f . For the initial state
+as deﬁned in Eq. 11, the key stream obtained is:
+Z =
+( 100 110
+001 100
+)
+. (14)
+Figure 6 gives an implementation of the reduced ChaCha described above in IBMQ.
+Figure 7 shows the output.
+3.2 Grover’s search on toy ChaCha
+For ChaCha the initial state is M =
+( 001 100
+010 111
+)
+, where the key is 111 and Z =
+( 100 110
+001 100
+)
+is the keystream obtained. Applying Grover should return the key,key =
+111. Figure 8 shows the outcome of applying Grover on (M, Z).
+3.3 Implementation in NISQ device (ibmq_16_melbourne quantum computer)
+We implement the above described toy cipher in the real quantum computer,
+ibmq_16_melbourne, provided by IBMQ. Since the maximum number of qubits avail-
+123
+Evaluation of Grover’s algorithm toward… Page 17 of 19 394
+Fig. 8 Histogram obtained after
+running Grover’s search on the
+reduced ChaCha described in
+Fig. 6
+Fig. 9 Histogram obtained by running the toy cipher in the simulator
+Fig. 10 Histogram obtained by running the toy cipher in ibmq_16_melbourne quantum computer
+able is 15, so we do not implement the last step, i.e., addition of the last round, which
+requires 12 more qubits. The comparison between the results obtained in the simulator
+and actual machine shows how a real threat from quantum computers is still distant
+dream.
+Figure 9 shows the output of implementing the toy cipher in the simulator for 1000
+shots.
+Figure 10 shows the output of implementing the toy cipher in the real quantum
+computer for 1000 shots. We can see here that the output of the real quantum computer
+is completely random and the actual output is far from the reality due to the inﬁdelity
+of the gates and short decoherence time of the qubits.
+123
+394 Page 18 of 19 B. Bathe et al.
+The situation in Fig. 10 shows that the threat due to a real quantum computer is
+still a distant dream. However, it is worth analyzing ciphers considering that the future
+with better working quantum computers is not very far.
+4 Conclusion
+In this work, we have constructed quantum reversible circuits for ChaCha and then
+estimated the resources required to implement the Grover’s search algorithm to ﬁnd
+the key. We have studied the cost of implementing Grover’s key search algorithm on
+the cipher under the NISTs MAXDEPTH constraint and ﬁnd that the ciphers fail to
+satisfy the security constraints. We have also observed that the number of rounds does
+affect the effectiveness of the Grover’s algorithm. Our estimates are not optimal as we
+have made some assumptions and we ﬁrmly believe that these estimates can be made
+tighter under different set of assumptions. Also future works on various quantum error
+correcting schemes may provide a signiﬁcantly optimized results in reality.
+Funding Not Applicable.
+Declarations
+Conﬂict of interest The authors declare that they have no conﬂict of interest.
+References
+1. Anand, R., Maitra, A., Mukhopadhyay, S.: Grover on SIMON. Quantum Inf. Process. 19(9), 1–17
+(2020). https://doi.org/10.1007/s11128-020-02844-w
+2. Anand, R., Maitra, A., Mukhopadhyay, S.: Evaluation of quantum cryptanalysis on SPECK. In: Bhar-
+gavan, K., Oswald, E., Prabhakaran, M. (eds.) Progress in Cryptology INDOCRYPT 2020. LNCS, vol.
+12578. Springer, Cham (2020). https://doi.org/10.1007/978-3-030-65277-7_18
+3. Anand, R., Maitra, S., Maitra, A., Mukherjee, C.S., Mukhopadhyay, S.: Resource estimation of Grovers-
+kind quantum cryptanalysis against FSR based symmetric ciphers. Cryptology ePrint Archive, Report
+2020/1438, https://eprint.iacr.org/2020/1438 (2020)
+4. Amy, M., Maslov, D., Mosca, M., Roetteler, M.: A meet-in-the-middle algorithm for fast synthesis of
+depth-optimal quantum circuits. IEEE Trans. Comput. Aided Des. Integr. Circuits Syst.32(6), 818–830
+(2013). https://doi.org/10.1109/TCAD.2013.2244643
+5. Aumasson, J.P ., Fischer, S., Khazaei, S., Meier, W., Rechberger, C.: New features of Latin dances:
+analysis of Salsa, ChaCha, and Rumba. In: Nyberg, K. (ed.) Fast Software Encryption. FSE 2008.
+Lecture Notes in Computer Science, vol. 5086. Springer, Berlin (2008). https://doi.org/10.1007/978-
+3-540-71039-4_30
+6. Aumasson, J.P .: Too much crypto. IACR Cryptol. ePrint Arch., p.1492 (2019). https://eprint.iacr.org/
+2019/1492
+7. Bernstein, D.J.: ChaCha, a variant of Salsa20. In: Workshop Record of SASC, vol. 8, pp. 3–5 (2008)
+8. Boyer, M., Brassard, G., Høyer, P ., Tapp, A.: Tight bounds on quantum searching. Fortschritte der
+Physik: Progress of Physics 46(4–5), 493–505 (1998)
+9. Choudhuri, A., Maitra, S.: Differential cryptanalysis of salsa and ChaCha: An evaluation with a hybrid
+model. Cryptology ePrint Archive: Report 2016/377, (2016)
+10. Davenport, J.H., Pring, B.: Improvements to quantum search techniques for block-ciphers, with appli-
+cations to AES. In: Selected Areas in Cryptography-SAC (2020)
+11. Dey, S., Sarkar, S.: Improved analysis for reduced round Salsa and Chacha. Discrete Appl. Math. 227,
+58–69 (2017). https://doi.org/10.1016/j.dam.2017.04.034
+123
+Evaluation of Grover’s algorithm toward… Page 19 of 19 394
+12. Jaques, S., Naehrig, M., Roetteler, M. and Virdia, F.: Implementing Grover oracles for quantum key
+search on AES and LowMC. Advances in Cryptology—EUROCRYPT 2020, volume 12106 of Lecture
+Notes in Computer Science, pp. 280–310. Springer (2020)
+13. Kim, P ., Han, D., Jeong, K.C.: Time-space complexity of quantum search algorithms in symmetric
+cryptanalysis: applying to AES and SHA-2. Quantum Inf. Process. 17(12), 1–39 (2018)
+14. Langenberg, B., Pham, H., Steinwandt, R.: Reducing the cost of implementing the advanced encryption
+standard as a quantum circuit. IEEE Trans. Quantum Eng.1, 1–12 (2020).https://doi.org/10.1109/TQE.
+2020.2965697
+15. Maitra, S.: Chosen IV cryptanalysis on reduced round ChaCha and Salsa. Discrete Appl. Math. 208,
+88–97 (2016)
+16. Maitra, S., Paul, G., Meier, W.: Salsa20 cryptanalysis: new moves and revisiting old styles. In: The
+9th International Workshop on Coding and Cryptography 2015 WCC2015, Anne Canteaut, Gaëtan
+Leurent, Maria Naya-Plasencia, Paris, France. ffhal-01276506f (2015)
+17. Grassl, M., Langenberg, B., Roetteler, M., Steinwandt, R.: Applying Grover’s algorithm to AES:
+quantum resource estimates. In: Takagi, T. (ed.) Post-quantum Cryptography. PQCrypto. Lecture Notes
+in Computer Science, vol. 9606, pp. 29–43. Springer, Cham (2016). https://doi.org/10.1007/978-3-
+319-29360-8_3
+18. Ramos-Calderer, S., Bellini, E., Latorre, J.I., Manzano, M., Mateu, V .: Quantum search for scaled hash
+function preimages. arXiv preprint arXiv:2009.00621. (2020)
+19. Shi, Z., Zhang, B., Feng, D., Wu, W.: Improved key recovery attacks on reduced-round Salsa20 and
+ChaCha. In: Information Security and Cryptology—ICISC, pp. 337–351 (2012)
+20. Takahashi, Y ., Tani, S., Kunihiro, N.: Quantum addition circuits and unbounded fan-out. Quantum Inf.
+Comput. 10(9), 872–890 (2010)
+21. NIST. Submission requirements and evaluation criteria for the post-quantum cryptography stan-
+dardization process (2016). https://csrc.nist.gov/CSRC/media/Projects/Post-Quantum-Cryptography/
+documents/call-for-proposals-ﬁnal-dec-2016.pdf
+22. Wiebe, N., Roetteler, M.: Quantum arithmetic and numerical analysis using repeat-until-success cir-
+cuits. Quantum Inf. Comput. 16(1–2), 134–178 (2014)
+23. https://github.com/raviro/chacha
+Publisher’s Note Springer Nature remains neutral with regard to jurisdictional claims in published maps
+and institutional afﬁliations.
+123
