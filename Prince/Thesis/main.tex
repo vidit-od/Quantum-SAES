@@ -10,6 +10,7 @@
 \usepackage{algorithmic}
 \usepackage{tabularx}
 \usepackage{float}
+\usepackage{comment}
 
 \geometry{
   a4paper,
@@ -53,7 +54,7 @@
 
 \vspace{12mm}
 
-A REPORT ON PROJECT WORK (PHASE I)
+A REPORT ON PROJECT WORK (PHASE II)
 
 \vspace{8mm}
 
@@ -191,6 +192,7 @@ I would also like to thank my friends and classmates for their cooperation, disc
 \listoffigures
 
 %---------------- List of symbols and abbreviations---
+\begin{comment}
 \cleardoublepage
 \onehalfspacing
 
@@ -218,7 +220,7 @@ Gate Count & Total number of quantum gates used in a circuit \\
 Amplitude Amplification & Process of increasing probability of correct state in Grover’s algorithm \\
 Aer Simulator & Qiskit backend for classical simulation of quantum circuits \\
 \end{tabular}
-
+\end{comment}
 
 %-----------------------Chapter 1 ---------------------
 
@@ -228,32 +230,27 @@ Aer Simulator & Qiskit backend for classical simulation of quantum circuits \\
 \onehalfspacing
 \chapter{INTRODUCTION}
 
-Symmetric block ciphers are widely used to protect digital information and are an important part of modern cryptographic systems. Their security is generally based on the difficulty of finding the secret key by exhaustive search using classical computers. However, the growth of quantum computing introduces a new security challenge, since quantum algorithms can solve some problems faster than classical algorithms.
+Symmetric block ciphers are widely used to secure digital information, and their security is traditionally based on the difficulty of exhaustive key search using classical computers. However, quantum computing introduces new challenges, as quantum algorithms can solve certain problems more efficiently.
 
-Grover's algorithm is one of the major quantum algorithms that affects symmetric cryptography. It can speed up key search and reduces the effective security of a cipher with a $k$-bit key to approximately $k/2$ bits. Therefore, a 128-bit key provides about 64 bits of security against an ideal quantum attacker. This makes it important to study how symmetric ciphers behave under quantum attacks.
+Grover’s algorithm significantly impacts symmetric cryptography by reducing the effective security of a k-bit key to approximately k/2 bits. As a result, studying the resistance of block ciphers against quantum attacks has become important.
 
-In this thesis, the \textbf{PRINCE block cipher} is considered for quantum cryptanalysis. PRINCE is a lightweight block cipher designed for low-latency and low-power applications such as IoT devices, RFID systems, and embedded security. It uses a 64-bit block size and a 128-bit key. Due to its lightweight design and practical relevance, PRINCE is suitable for studying the effect of Grover's algorithm on symmetric block ciphers.
+This thesis focuses on the PRINCE lightweight block cipher, which is designed for low-latency and low-power applications such as IoT devices and embedded systems. A reversible quantum implementation of PRINCE is developed and used to construct a Grover-based key search circuit.
 
-To apply Grover's algorithm, the classical cipher must be represented as a reversible quantum circuit. In this work, a reversible quantum implementation of PRINCE is developed and used to construct a Grover-based key search circuit. Since simulating the complete 128-bit key search is infeasible on classical hardware, this thesis focuses on circuit construction and quantum resource estimation rather than full simulation of the attack.
-
-The work estimates important quantum resources such as qubit count, gate count, circuit depth, T-gate count, and T-depth for the PRINCE cipher and for one Grover iteration. This helps in understanding the practical cost of quantum attacks on lightweight symmetric ciphers and highlights the importance of post-quantum evaluation of cryptographic systems.
+Since full simulation of a 128-bit quantum key search is infeasible on classical hardware, this work concentrates on quantum circuit construction and resource estimation. Important metrics such as qubit count, gate count, circuit depth, T-count, and T-depth are analyzed to evaluate the practical cost of quantum attacks on the PRINCE cipher.
 
 \section{Motivation}
 
-The rapid progress of quantum computing has increased the need to revisit the security assumptions of modern cryptographic systems. While symmetric block ciphers are considered secure against classical exhaustive search when sufficiently large keys are used, \textbf{Grover's algorithm} introduces a different attack model by reducing the complexity of key search quadratically. As a result, a cipher with a 128-bit key offers only about 64 bits of effective security against an ideal quantum adversary.
+The fast development of quantum computing technology creates a necessity to reevaluate the security properties of current cryptosystems. Although symmetric block ciphers are assumed to be immune to classical brute-force attack with large enough keys, \textbf{the Grover's algorithm} proposes another type of attack that decreases the complexity of key search twice. Consequently, the 128-bit block cipher is equivalent to only 64-bit cipher in terms of security against quantum computer-based attack.
 
-Understanding this threat requires more than a theoretical statement about key-size reduction. It requires explicit reversible quantum implementations of block ciphers, since the cost of a Grover attack depends heavily on the quantum resources needed to implement the encryption oracle. Metrics such as qubit count, Toffoli count, Clifford+T gate count, T-depth, and total logical depth are essential for evaluating the feasibility of such attacks.
+In order to comprehend the above danger, one needs to go beyond generalizing the key size reduction problem. It is necessary to develop actual reversible quantum implementations of block ciphers, because the efficiency of Grover's attack depends very much on the quantum costs of constructing the cipher oracle. Measures such as number of qubits, Toffoli gates, and other measures must be taken into account.
 
-PRINCE is a suitable cipher for this study because it is lightweight, structurally compact, and designed for low-latency applications. Its round structure, S-box layer, M-layer, round constants, and simple key schedule make it useful for studying how a practical lightweight cipher can be translated into a reversible quantum circuit. This thesis is motivated by the need to bridge the gap between theoretical quantum cryptanalysis and practical circuit-level resource estimation.
+PRINCE is a good candidate for use in this study due to its lightweight nature, structural simplicity, and suitability for use in low-latency applications. The round structure, use of S-boxes, M-layer, round constants, and key scheduling process employed in PRINCE make it a good choice for use in analyzing how to convert a lightweight cipher into a reversible quantum circuit. This research was prompted by the necessity of linking theoretical quantum attacks on ciphers with quantum circuit design.
 
 \section{Problem Statement}
 
-Symmetric block ciphers are considered secure against classical attacks when exhaustive key search is computationally infeasible. However, quantum algorithms such as Grover's algorithm threaten this security assumption by providing faster key search capabilities. Therefore, it is necessary to investigate the impact of such quantum algorithms on symmetric block ciphers.
+It is presumed that the symmetric block ciphers are secure against classical attacks if exhaustive key search is infeasible. On the other hand, quantum algorithms like Grover's algorithm pose a challenge to the above assumption by offering faster key search. This is due to the reason that quantum computing is much faster than classical computing.
 
 The problem addressed in this thesis is the construction and analysis of a reversible quantum implementation of the PRINCE block cipher and its use within a Grover-based key-search framework. Since full simulation over the 128-bit key space is infeasible on classical hardware, the work focuses on circuit construction and resource estimation for the PRINCE encryption oracle and one Grover iteration.
-
-\vspace{0.5cm}
-
 \section{Objective}
 
 The aims of this thesis are as follows:
@@ -269,41 +266,35 @@ The aims of this thesis are as follows:
 \onehalfspacing
 \chapter{LITERATURE REVIEW}
 
-The literature on quantum cryptanalysis has grown significantly with the development of quantum computing, especially in understanding its impact on classical cryptographic systems. Symmetric block ciphers are mainly affected by Grover's algorithm, which provides a quadratic speedup for exhaustive key search. Several works have studied the use of Grover's algorithm for block cipher cryptanalysis, either through theoretical analysis, resource estimation, or reversible quantum circuit construction. This section reviews related work on quantum attacks and resource estimation for symmetric block ciphers, with emphasis on PRINCE and Grover-based key search.
+The literature on quantum cryptanalysis has grown significantly with the development of quantum computing, especially regarding its impact on classical cryptographic systems. Symmetric block ciphers are mainly affected by Grover's algorithm, which provides a quadratic speedup for exhaustive key search. Several works have studied Grover-based cryptanalysis through theoretical analysis, resource estimation, and reversible quantum circuit construction. This section reviews related work on quantum attacks and resource estimation for symmetric block ciphers, with emphasis on PRINCE and Grover-based key search.
 
 \section{Quantum Resource Estimation of PRINCE and Midori Block Ciphers}
 
-The paper \textit{Quantum Resource Estimation of PRINCE and Midori Block Ciphers} studies the quantum resource requirements of lightweight block ciphers. The work focuses on estimating resources such as qubit count, quantum gates, and depth for implementing components of PRINCE and Midori in a quantum setting. It discusses the use of quantum gates such as X, CNOT, Toffoli, and CCCNOT, and considers Grover's search as the main method for exhaustive key search.
+The paper Quantum Resource Estimation of PRINCE and Midori Block Ciphers studies the quantum resource requirements of lightweight block ciphers. The work estimates resources such as qubit count, quantum gates, and circuit depth for PRINCE and Midori in a quantum setting. It discusses the use of X, CNOT, Toffoli, and CCCNOT gates, and considers Grover's search as the primary method for exhaustive key search.
 
-This paper is important because it directly considers PRINCE, which is also the cipher studied in this thesis. However, the work mainly focuses on S-box construction and resource estimation, while the complete implementation of the full PRINCE cipher is not discussed in detail. Other important parts of PRINCE, such as the M-layer, key schedule, full round integration, and complete Grover oracle construction, are not fully developed. This leaves scope for a complete reversible implementation and resource analysis of the full PRINCE cipher.
+This paper is important because it directly considers PRINCE, which is also studied in this thesis. However, the work mainly focuses on S-box construction and partial resource estimation, while the complete implementation of the full PRINCE cipher is not discussed in detail. Important components such as the M-layer, key schedule, full round integration, and complete Grover oracle construction are not fully developed. This leaves scope for a complete reversible implementation and resource analysis of the full PRINCE cipher.
 
 \section{Quantum Attacks on 1K-AES and PRINCE}
 
-The paper \textit{Quantum Attacks on 1K-AES and PRINCE} analyzes quantum attacks on symmetric block ciphers, including PRINCE. It studies quantum techniques such as related-key attacks, the BHT algorithm, collision and claw-finding methods, and combinations with Grover's algorithm for key recovery. The work shows how quantum algorithms can reduce the security of block ciphers under certain attack models.
+The paper 'Quantum Attacks on 1K-AES and PRINCE' discusses quantum attacks on symmetric block ciphers like PRINCE. The paper deals with attacks like related-key attacks, BHT algorithm, collision, and claw-finding techniques, and combination of all with Grover's algorithm. The paper reveals how quantum attacks can make block ciphers weaker under specific conditions.
 
-This paper is useful because it highlights the relevance of PRINCE in quantum cryptanalysis and shows that PRINCE has been studied under quantum attack models. However, the focus is mainly on attack strategy and high-level oracle assumptions rather than full circuit-level implementation. The paper does not provide detailed implementation of the complete PRINCE cipher as a reversible quantum circuit. Therefore, practical resource estimation based on an explicit full-cipher quantum circuit remains an open area.
-
-\section{Quantum Grover Attack on the S-AES}
-
-The paper \textit{Quantum Grover Attack on the Simplified-AES} presents a Grover-based key search attack on the Simplified Advanced Encryption Standard (S-AES). The authors design a reversible quantum circuit for S-AES and construct a Grover oracle using the encryption circuit. This work is significant because it demonstrates how a symmetric block cipher can be implemented as a quantum circuit and used within Grover's algorithm for key recovery.
-
-Although the cipher considered is S-AES and not PRINCE, the work is relevant because it shows the general methodology for applying Grover's algorithm to block ciphers. It also demonstrates the importance of circuit-level implementation instead of only assuming an abstract oracle. However, S-AES is a simplified cipher with a small key size, and the results do not directly apply to practical lightweight ciphers such as PRINCE. This motivates extending similar ideas to a full lightweight block cipher with a larger key space.
+From this paper, one can understand the significance of PRINCE in the context of quantum cryptanalysis. But here again, the discussion revolves around quantum attacks and oracle modeling in general, and not about circuit level implementation. No complete quantum circuit of PRINCE has been provided in this paper. Hence, no exact resource estimation in terms of complete quantum circuit implementation has been done yet.
 
 \section{Research Gaps Summary}
 
-From the reviewed literature, it can be observed that quantum attacks on symmetric block ciphers have been studied from different perspectives. Some works provide theoretical quantum attack models, while others focus on resource estimation or simplified cipher implementations. However, several gaps remain.
+It can be seen from the literature survey that research into quantum attacks against symmetric block ciphers has been carried out from different aspects, where some researchers have worked on attack models, and some on resource estimates or reduced implementation of the cipher. Nevertheless, certain deficiencies can be noted.
 
-First, existing PRINCE-related works often focus on selected components such as the S-box or on high-level attack models, without giving a complete reversible quantum implementation of the full cipher. Second, complete Grover-based demonstrations are often performed on simplified ciphers such as S-AES, which do not represent the resource requirements of practical lightweight ciphers. Third, there is limited discussion of practical resource metrics such as qubit count, gate count, logical depth, Clifford gate count, T-gate count, and T-depth for a full PRINCE-based Grover iteration.
+First of all, many studies related to PRINCE tend to concentrate on individual elements, like the S-boxes or on higher-level attacks, but they do not present a completely reversible quantum implementation of the whole cipher. Moreover, most PRINCE-based Grover demonstrations use simplified ciphers like S-AES that do not properly capture the actual resource needs of a lightweight cipher. Practical resource measurements such as number of qubits, gates, logic depth, number of Clifford gates, T-gates, and T-depth for a PRINCE-based Grover iteration are rarely considered.
 
-This thesis addresses these gaps by constructing a reversible quantum implementation of the full PRINCE block cipher and estimating the resources required for both PRINCE encryption and one Grover iteration. The work focuses on circuit-level construction and resource estimation, while also acknowledging the practical limitation that full simulation over the 128-bit key space is infeasible on classical hardware.
+The current thesis aims at filling the aforementioned gaps by proposing a reversible quantum circuit for the complete PRINCE block cipher and estimating the resources needed to carry out encryption using PRINCE and one Grover iteration.
 
 \chapter{PROPOSED METHODOLOGY}
 
-This chapter discusses the methodology adopted for implementing and analyzing a Grover-based quantum attack on the PRINCE block cipher. It covers (i) the construction of a reversible quantum circuit for PRINCE, (ii) the use of this circuit to build a Grover oracle for key search, and (iii) the estimation of quantum resources required for one Grover iteration. It further explains the practical constraints of the study, especially the infeasibility of simulating the full 128-bit key space on classical hardware, and therefore focuses on circuit construction and resource estimation while preserving the essential structure of the quantum attack.
+The discussion here revolves around the methodology that is employed in conducting a Grover attack on PRINCE. The methodology is outlined in three main areas of discussion, namely (i) design of a quantum circuit for PRINCE that is reversible, (ii) using the quantum circuit to create an oracle for key search via Grover algorithm, and (iii) estimating quantum resources needed in a single Grover iteration. Other limitations in the experiment have been noted; it would be impossible to simulate the entire key space (128-bits).
 
-\section{PRINCE Circuit Design}
+\section{Classical PRINCE Cipher}
 
-The proposed approach follows the methodology of designing a reversible quantum circuit for the PRINCE block cipher and embedding it into a Grover-based key search framework. The quantum implementation reproduces the overall encryption structure of PRINCE using reversible quantum operations. The circuit takes a 64-bit plaintext and a 128-bit key as input, where the key is divided into two 64-bit halves, $k_0$ and $k_1$. The modified key $k_0'$ is derived from $k_0$ and is used during the final whitening stage. The plaintext is first combined with the initial key material through key addition operations, after which the main PRINCE round structure is applied as represented Fig \ref{fig:Prince_circuit}.
+PRINCE stands for an efficient lightweight symmetric cipher that was designed for use in latency-sensitive cryptographic operations. This cipher uses a plaintext input of 64 bits and a secret key of 128 bits. Its design is geared towards achieving fast hardware implementations with low latency. PRINCE differs from other lightweight ciphers in the sense that while they emphasize minimization of area or energy consumption, PRINCE is highly concerned about lowering latency of encryptions.
 
 \begin{figure}[h]
 \centering
@@ -312,138 +303,175 @@ The proposed approach follows the methodology of designing a reversible quantum 
 \label{fig:Prince_circuit}
 \end{figure}
 
-The quantum PRINCE circuit consists of an initial key addition stage, round constant addition, five forward rounds, a middle round, and five inverse rounds. After the inverse rounds, the final round constant and key material are added, including the use of $k_1$ and $k_0'$. This complete reversible structure as shown in \ref{fig:Prince_full} ensures that the quantum circuit follows the classical PRINCE encryption process while remaining suitable for use inside a Grover oracle. At this level, the circuit is viewed as a complete encryption block, and the internal details of each round are considered separately in later sections.~\ref{fig:Prince_circuit}.
+The general structure of the PRINCE algorithm includes whitening initialization, five rounds of processing in the forward direction, a middle layer of processing, five rounds of inverse processing, and the end whitening process. In terms of the master key, which has 128 bits, PRINCE uses two keys $k_0$ and $k_1$, each having 64 bits. At the start of the encryption process, the plaintext data undergoes XOR operation against the key values. For every round in the forward processing procedure, PRINCE performs four major processes: S-layer operation for substitution, M-layer process for diffusion, round constants addition, and round keys addition, utilizing $k_1$. After completing five forward processing rounds, a middle transformation process is performed, followed by five rounds of inverse processing.
 
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
-\includegraphics[width= 0.8\textwidth]{Prince_Full.png}
-\caption{Prince Core Circuit Design}
-\label{fig:Prince_full}
+\includegraphics[width=0.85\textwidth]{Prince_Full.png}
+\caption{Overall Structure of the PRINCE Block Cipher}
+\label{fig:classical_prince_full}
 \end{figure}
 
-\section{Rounds}
+S-layer constitutes the non-linear substitution layer in PRINCE ciphering algorithm and takes care of the creation of confusion in the algorithm. During this phase, the internal state of 64 bits is broken into sixteen 4-bit nibbles. These 4-bit nibbles are then subjected to substitution transformation independently, which is performed through a defined substitution function called PRINCE S-box. This PRINCE S-box converts every possible 4-bit input to its corresponding 4-bit output, thus not allowing any kind of linear relationship between the plaintext, ciphertext, and the key.
 
-PRINCE consists of a total of ten main rounds. The first five rounds are forward rounds, represented as $R$ in Figure \ref{fig:Prince_full}. These rounds are applied after the initial key addition stage and form the first half of the PRINCE core. The remaining five rounds are inverse rounds, represented as $IR$ in the same figure. These inverse rounds form the second half of the cipher and help provide the special reflection property of PRINCE.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width= 0.6\textwidth]{Forward_Round.png}
-\caption{A Forward round of Prince}
-\label{fig:Prince_full}
-\end{figure}
-
-The structure of a forward round is shown in Figure \ref{fig:forward_round}. Each forward round consists of an S-box layer, an M-layer, round constant addition, and round-key addition using $k_1$. The inverse round structure is shown in Figure \ref{fig:inverse_round}. In an inverse round, the operations are applied in the reverse form, starting with key addition and round constant addition, followed by the inverse M-layer and inverse S-box layer.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width= 0.6\textwidth]{Backward_Round.png}
-\caption{An Inverse round of Prince}
-\label{fig:inverse_round}
-\end{figure}
-
-Between the five forward rounds and five inverse rounds, PRINCE uses a middle layer. This middle layer consists of an S-box layer, followed by the M-layer, and then an inverse S-box layer. It connects the forward and inverse halves of the cipher and is an important part of the overall PRINCE encryption structure.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width= \textwidth]{Key_Generation.png}
-\caption{Key generation in Prince Cipher}
-\label{fig:Key_generation}
-\end{figure}
-
-
-\section{Key Generation}
-
-As shown in Figure \ref{fig:Key_generation}, PRINCE uses a 128-bit master key as input, which is divided into two 64-bit halves, $k_0$ and $k_1$. The upper 64 bits of the key form $k_0$, while the lower 64 bits form $k_1$. A modified key, denoted as $k_0'$, is generated from $k_0$ by applying a one-bit right rotation and then XORing it with the most significant bit of $k_0$. In the encryption process, $k_0$ is used during the initial whitening stage, $k_1$ is used as the round key throughout the forward and inverse rounds, and $k_0'$ is used during the final whitening stage. This simple key generation process keeps PRINCE lightweight while still providing the required key material for the complete cipher.
-
-\section{Preparation and Round Constants}
-
-In the preparation stage, the 64-bit plaintext is loaded into the quantum state register. Each plaintext bit with value 1 is initialized using a Pauli-X gate, while bits with value 0 are left unchanged. After loading the plaintext, key addition is performed using CNOT gates, where the key qubits act as control qubits and the state qubits act as target qubits. This implements the XOR operation required for key whitening in a reversible quantum form.
-
-Round constants are fixed 64-bit values used in different stages of PRINCE. In the quantum circuit, adding a round constant is implemented by applying Pauli-X gates to the state qubits wherever the corresponding bit of the constant is 1. Since these constants are known classical values, no additional quantum register is required for them.
-
-\begin{table}[h]
-\centering
-\caption{PRINCE Round Constants}
-\label{tab:prince_round_constants}
-\begin{tabular}{|c|c|}
-\hline
-\textbf{Stage} & \textbf{Round Constant (Hex)} \\
-\hline
-$RC_0$ & 0x0000000000000000 \\
-\hline
-$RC_1$ & 0x13198A2E03707344 \\
-\hline
-$RC_2$ & 0xA4093822299F31D0 \\
-\hline
-$RC_3$ & 0x082EFA98EC4E6C89 \\
-\hline
-$RC_4$ & 0x452821E638D01377 \\
-\hline
-$RC_5$ & 0xBE5466CF34E90C6C \\
-\hline
-$RC_6$ & 0x7EF84F78FD955CB1 \\
-\hline
-$RC_7$ & 0x85840851F1AC43AA \\
-\hline
-$RC_8$ & 0xC882D32F25323C54 \\
-\hline
-$RC_9$ & 0x64A51195E0E3610D \\
-\hline
-$RC_{10}$ & 0xD3B5A399CA0C2399 \\
-\hline
-$RC_{11}$ & 0xC0AC29B7C97C50DD \\
-\hline
-\end{tabular}
-\end{table}
-
-\section{S-box}
-
-The S-box is the non-linear component of the PRINCE cipher and plays an important role in providing confusion. It operates on a nibble, where one nibble is a group of 4 bits. Since the PRINCE block size is 64 bits, the state is divided into 16 nibbles in one S-layer. The S-box is applied independently to each of these 16 nibbles, converting a 4-bit input $(a_3a_2a_1a_0)$ into a 4-bit output $(b_3b_2b_1b_0)$ according to a fixed substitution table.
-
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \caption{PRINCE S-box Mapping}
-\label{tab:prince_sbox}
-\begin{tabular}{|c|c|c|c|}
+\label{tab:classical_prince_sbox}
+\begin{tabular}{|c|c|}
 \hline
-\textbf{Input Hex} & \textbf{$a_3a_2a_1a_0$} & \textbf{Output Hex} & \textbf{$b_3b_2b_1b_0$} \\
+\textbf{Input (Hex)} & \textbf{Output (Hex)} \\
 \hline
-0x0 & 0000 & 0xB & 1011 \\
+0x0 & 0xB \\
 \hline
-0x1 & 0001 & 0xF & 1111 \\
+0x1 & 0xF \\
 \hline
-0x2 & 0010 & 0x3 & 0011 \\
+0x2 & 0x3 \\
 \hline
-0x3 & 0011 & 0x2 & 0010 \\
+0x3 & 0x2 \\
 \hline
-0x4 & 0100 & 0xA & 1010 \\
+0x4 & 0xA \\
 \hline
-0x5 & 0101 & 0xC & 1100 \\
+0x5 & 0xC \\
 \hline
-0x6 & 0110 & 0x9 & 1001 \\
+0x6 & 0x9 \\
 \hline
-0x7 & 0111 & 0x1 & 0001 \\
+0x7 & 0x1 \\
 \hline
-0x8 & 1000 & 0x6 & 0110 \\
+0x8 & 0x6 \\
 \hline
-0x9 & 1001 & 0x5 & 0101 \\
+0x9 & 0x5 \\
 \hline
-0xA & 1010 & 0x0 & 0000 \\
+0xA & 0x0 \\
 \hline
-0xB & 1011 & 0xE & 1110 \\
+0xB & 0xE \\
 \hline
-0xC & 1100 & 0xD & 1101 \\
+0xC & 0xD \\
 \hline
-0xD & 1101 & 0x8 & 1000 \\
+0xD & 0x8 \\
 \hline
-0xE & 1110 & 0x4 & 0100 \\
+0xE & 0x4 \\
 \hline
-0xF & 1111 & 0x7 & 0111 \\
+0xF & 0x7 \\
 \hline
 \end{tabular}
 \end{table}
 
-Implementing the S-box in a quantum circuit is difficult because quantum operations must be reversible and unitary. In a classical circuit, an S-box can be implemented directly as a lookup table, but such direct overwriting is not allowed in quantum computation. Also, due to the no-cloning principle, an unknown quantum state cannot be freely copied like classical data. Therefore, the input bits must be transformed carefully without losing information, and any temporary values stored in ancilla qubits must be uncomputed back to $|0\rangle$. To handle this, the S-box is expressed using Algebraic Normal Form (ANF) equations. ANF represents each output bit as an XOR of constants, input bits, and products of input bits. This form is suitable for quantum implementation because XOR terms can be implemented using CNOT gates, constants using Pauli-X gates, and product terms using Toffoli gates.
+The M-layer is the linear diffusion layer of PRINCE and is used to spread the influence of individual bits across the internal state. Its primary objective is to ensure that small changes in the plaintext or key affect many output bits after multiple rounds, thereby improving diffusion. The transformation is represented mathematically using binary matrices over $GF(2)$. The complete 64-bit state is divided into four 16-bit blocks, and each block undergoes a linear transformation using the matrix $M_{16}$. The overall M-layer matrix is therefore constructed as a block diagonal matrix.
+
+\[
+I_4 =
+\begin{bmatrix}
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 1
+\end{bmatrix}
+\qquad
+Z_4 =
+\begin{bmatrix}
+0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0
+\end{bmatrix}
+\]
+
+\[
+M_{16} =
+\begin{bmatrix}
+Z_4 & I_4 & I_4 & I_4 \\
+I_4 & Z_4 & I_4 & I_4 \\
+I_4 & I_4 & Z_4 & I_4 \\
+I_4 & I_4 & I_4 & Z_4
+\end{bmatrix}
+\]
+
+\[
+M =
+\begin{bmatrix}
+M_{16} & 0 & 0 & 0 \\
+0 & M_{16} & 0 & 0 \\
+0 & 0 & M_{16} & 0 \\
+0 & 0 & 0 & M_{16}
+\end{bmatrix}_{64 \times 64}
+\]
+
+The M-layer performs only linear XOR-based transformations and therefore complements the non-linear behavior introduced by the S-layer. Together, the S-layer and M-layer form the core substitution--permutation structure of the PRINCE cipher.
+
+\section{Reversible Circuits for PRINCE}
+
+This section presents the reversible quantum implementation of the PRINCE block cipher. Since quantum computation requires all operations to be reversible and unitary, the classical PRINCE encryption structure must be transformed into a reversible quantum circuit. The proposed implementation reproduces the behavior of the classical cipher using quantum gates such as Pauli-X, CNOT, and Toffoli gates. Separate quantum registers are used for the plaintext state, key material, and temporary ancilla storage required during reversible computation. The resulting circuit can be embedded into a Grover oracle for quantum key-search applications.
+
+\subsection{Qubit Distribution}
+
+The quantum implementation of PRINCE uses separate qubit registers for storing the plaintext state, secret key components, and ancilla workspace required for reversible operations. The 64-bit state register stores the plaintext and all intermediate values generated during encryption. Additional ancilla qubits are required mainly for reversible S-box computation, where temporary values must be stored without destroying the original input state. Separate registers are also maintained for the key components $k_0$, $k_1$, and the derived key $k_0'$.
+
+\begin{table}[H]
+\centering
+\caption{Qubit Allocation in Quantum PRINCE Implementation}
+\label{tab:qubit_distribution}
+\begin{tabular}{|c|c|p{7cm}|}
+\hline
+\textbf{Qubit Range} & \textbf{Purpose} & \textbf{Description} \\
+\hline
+0--63 & State Register & Stores the 64-bit plaintext and intermediate cipher state during encryption \\
+\hline
+64--287 & S-box Ancilla & Ancilla workspace used during reversible implementation of the S-box layer \\
+\hline
+288--351 & $k_0$ Register & Stores the first 64-bit key half used during initial whitening \\
+\hline
+352--415 & $k_1$ Register & Stores the round key used in all forward and inverse rounds \\
+\hline
+416--479 & $k_0'$ Register & Stores the derived key used during final whitening \\
+\hline
+\end{tabular}
+\end{table}
+
+The separation of registers helps preserve reversibility throughout the computation. The ancilla qubits used during intermediate computations are uncomputed back to the $|0\rangle$ state after use, ensuring that no unwanted garbage states remain in the circuit. This property is essential for embedding the encryption circuit into Grover's algorithm, where the oracle must operate reversibly.
+
+\subsection{Quantum Round Structure}
+
+The reversible PRINCE circuit follows the same high-level structure as the classical cipher. The encryption process begins with initial key whitening, followed by five forward rounds, a middle layer, and five inverse rounds. Finally, a last whitening stage is applied using the derived key material.
+
+The inverse rounds apply the inverse transformations in reverse order while preserving reversibility. Since XOR operations are naturally reversible, round-key addition and round constant addition are implemented efficiently using CNOT and Pauli-X gates.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{Forward_Round.png}
+\caption{Quantum Forward Round Structure of PRINCE}
+\label{fig:quantum_forward_round}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{Backward_Round.png}
+\caption{Quantum Inverse Round Structure of PRINCE}
+\label{fig:quantum_inverse_round}
+\end{figure}
+
+The middle layer connects the forward and inverse halves of the cipher and consists of an S-layer, M-layer, and inverse S-layer. Together, these components preserve the reflection-based structure of PRINCE while remaining compatible with reversible quantum computation.
+
+\subsection{Quantum Key Generation}
+
+The PRINCE key schedule is implemented reversibly using quantum operations. The 128-bit master key is divided into two 64-bit halves, denoted as $k_0$ and $k_1$. A modified key $k_0'$ is generated from $k_0$ using a one-bit circular right rotation followed by XOR with the most significant bit.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Key_Generation.png}
+\caption{Quantum Key Generation Structure for PRINCE}
+\label{fig:quantum_key_generation}
+\end{figure}
+
+The generated key material is stored in dedicated quantum registers and reused during the whitening and round-key addition stages. Since the operations used in the key schedule are XOR-based, they can be implemented reversibly using CNOT gates without requiring large additional ancilla resources.
+
+\subsection{Quantum S-box Implementation}
+
+The S-box is the only non-linear component of the PRINCE cipher and therefore represents one of the most important parts of the reversible quantum implementation. In the PRINCE S-layer, the 64-bit state is divided into sixteen 4-bit nibbles, and the same 4-bit substitution is applied independently to each nibble.
+
+Direct lookup-table implementation is not suitable in quantum computation because quantum operations must be reversible and cannot overwrite unknown quantum states. Therefore, the PRINCE S-box is represented using Algebraic Normal Form (ANF), where each output bit is expressed as a combination of XOR terms and product terms over the input bits.
+
+The ANF representation is suitable for quantum implementation because XOR operations can be implemented using CNOT gates. Also, Constant bit flips can be implemented using Pauli-X gates and product terms can be implemented using Toffoli gates
 
 \begin{figure}[h]
 \centering
@@ -458,142 +486,93 @@ f(a_3,a_2,a_1,a_0)
 &\quad \oplus C_8a_3 \oplus C_9a_0a_3 \oplus C_{10}a_1a_3
  \oplus C_{11}a_0a_1a_3 \oplus C_{12}a_2a_3 \\
 &\quad \oplus C_{13}a_0a_2a_3 \oplus C_{14}a_1a_2a_3
- \oplus C_{15}a_0a_1a_2a_3 \\[3pt]
+ \oplus C_{15}a_0a_1a_2a_3 \\[6pt]
+& \text{( Follow Möbius transformation
+ procedure to get these constansts  )} \\[8pt]
+%--- Representative coefficient calculations (b_0) ---
 C_0 &= f(0000) = 1 \\
 C_1 &= f(0001) \oplus f(0000) = 1 \oplus 1 = 0 \\
-C_2 &= f(0010) \oplus f(0000) = 1 \oplus 1 = 0 \\
-C_3 &= f(0011) \oplus f(0010) \oplus f(0001) \oplus f(0000) \\
-    &= 0 \oplus 1 \oplus 1 \oplus 1 = 1 \\
+C_3 &= f(0011) \oplus f(0010) \oplus f(0001) \oplus f(0000)
+     = 0 \oplus 1 \oplus 1 \oplus 1 = 1 \\
 C_4 &= f(0100) \oplus f(0000) = 0 \oplus 1 = 1 \\
-C_5 &= f(0101) \oplus C_0 \oplus C_1 \oplus C_4
-     = 1 \oplus 1 \oplus 0 \oplus 1 = 0 \\
 C_6 &= f(0110) \oplus C_0 \oplus C_2 \oplus C_4
      = 1 \oplus 1 \oplus 0 \oplus 1 = 1 \\
-C_7 &= f(0111) \oplus C_0 \oplus C_1 \oplus C_2 \oplus C_3
-      \oplus C_4 \oplus C_5 \oplus C_6 \\
-    &= 0 \oplus 1 \oplus 0 \oplus 0 \oplus 1
-      \oplus 1 \oplus 0 \oplus 1 = 1 \\
 C_8 &= f(1000) \oplus f(0000) = 0 \oplus 1 = 1 \\
-C_9 &= f(1001) \oplus C_0 \oplus C_1 \oplus C_8
-     = 1 \oplus 1 \oplus 0 \oplus 1 = 1 \\
-C_{10} &= C_{11} = C_{12} = C_{13} = C_{14} = C_{15} = 0 \\[14pt]
-\therefore\quad
-b_0
-&= 1
-\oplus a_0a_1
-\oplus a_2
-\oplus a_1a_2
-\oplus a_0a_1a_2
-\oplus a_3
-\oplus a_0a_3
+&\quad \vdots \quad \text{(remaining } C_i \text{ computed similarly; } C_{10}=C_{11}=\cdots=C_{15}=0 \text{)} \\[8pt]
+%--- Final ANF equations for all output bits ---
+b_0 &= 1
+  \oplus a_0a_1
+  \oplus a_2
+  \oplus a_1a_2
+  \oplus a_0a_1a_2
+  \oplus a_3
+  \oplus a_0a_3 \\[4pt]
+b_1 &= 1
+  \oplus a_0a_2
+  \oplus a_1a_2
+  \oplus a_0a_1a_2
+  \oplus a_0a_3
+  \oplus a_1a_3
+  \oplus a_2a_3 \\[4pt]
+b_2 &= a_0
+  \oplus a_0a_1
+  \oplus a_3
+  \oplus a_0a_3
+  \oplus a_1a_3
+  \oplus a_0a_2a_3
+  \oplus a_1a_2a_3 \\[4pt]
+b_3 &= 1
+  \oplus a_1
+  \oplus a_1a_2
+  \oplus a_0a_1a_2
+  \oplus a_3
+  \oplus a_1a_3
+  \oplus a_0a_1a_3
+  \oplus a_2a_3
 \end{align*}
 \end{minipage}
 }
-\caption{ANF coefficient calculation and final ANF equation for $b_0$}
-\label{fig:anf_b0}
+\caption{ANF coefficient calculation (representative steps for $b_0$) and final ANF equations for all PRINCE S-box output bits}
+\label{fig:anf_combined}
 \end{figure}
 
-The ANF equation for each output bit is obtained by calculating the coefficients of the general ANF expression using the S-box truth table. Figure~\ref{fig:anf_b0} shows the coefficient calculation for $b_0$, and the same method is applied to obtain the remaining output equations.
+The resulting reversible S-box circuit is implemented using a combination of Pauli-X, CNOT, and Toffoli gates. Temporary ancilla qubits are used during intermediate computations and are later uncomputed to maintain reversibility.
 
-\begin{figure}[h]
+\begin{table}[H]
 \centering
-\fbox{
-\begin{minipage}{0.86\textwidth}
-\setlength{\abovedisplayskip}{3pt}
-\setlength{\belowdisplayskip}{3pt}
-\begin{align*}
-b_0
-&= 1
-\oplus a_0a_1
-\oplus a_2
-\oplus a_1a_2
-\oplus a_0a_1a_2
-\oplus a_3
-\oplus a_0a_3 \\[4pt]
-b_1
-&= 1
-\oplus a_0a_2
-\oplus a_1a_2
-\oplus a_0a_1a_2
-\oplus a_0a_3
-\oplus a_1a_3
-\oplus a_2a_3 \\[4pt]
-b_2
-&= a_0
-\oplus a_0a_1
-\oplus a_3
-\oplus a_0a_3
-\oplus a_1a_3
-\oplus a_0a_2a_3
-\oplus a_1a_2a_3 \\[4pt]
-b_3
-&= 1
-\oplus a_1
-\oplus a_1a_2
-\oplus a_0a_1a_2
-\oplus a_3
-\oplus a_1a_3
-\oplus a_0a_1a_3
-\oplus a_2a_3
-\end{align*}
-\end{minipage}
-}
-\caption{ANF equations for PRINCE S-box output bits}
-\label{fig:anf_all_bits}
+\caption{Quantum Resource Requirement for One PRINCE S-layer}
+\label{tab:sbox_resource}
+\begin{tabular}{|c|c|p{7cm}|}
+\hline
+\textbf{Resource} & \textbf{Count} & \textbf{Description} \\
+\hline
+S-box Instances & 16 & One S-box is applied independently to each 4-bit nibble of the 64-bit state \\
+\hline
+Input Qubits & 64 & State qubits used as input to the S-layer \\
+\hline
+Ancilla Qubits & 224 & Temporary workspace qubits required for reversible ANF computation \\
+\hline
+Pauli-X Gates & 80 & Used for constant bit flips in the ANF implementation \\
+\hline
+CNOT Gates & 880 & Used for XOR operations in the reversible S-box computation \\
+\hline
+Toffoli Gates & 640 & Used for implementing non-linear product terms in the ANF equations \\
+\hline
+Total Quantum Gates & 1600 & Total number of gates required for one complete S-layer \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{S-nibble.png}
+\caption{Reversible Quantum Circuit for the PRINCE S-box}
+\label{fig:quantum_sbox_circuit}
 \end{figure}
 
-The equations in Figure \ref{fig:anf_all_bits} can be realized in a way avoiding line corruption. This ANF implementation in actual circuit is shown in Figure \ref{fig:SNibble}.
+The PRINCE S-layer operates on the complete 64-bit internal state by dividing it into sixteen independent 4-bit nibbles. Each nibble is processed using the reversible ANF-based S-box circuit. Since the same S-box structure is reused for all sixteen nibbles, the total resource requirement of one S-layer is obtained by multiplying the resource cost of a single S-box by sixteen. The S-layer contributes significantly to the overall quantum resource cost of the PRINCE circuit because the non-linear ANF terms require a large number of Toffoli gates and ancilla qubits.
 
-\begin{figure}
-    \centering
-    \includegraphics[width=\linewidth]{S-nibble.png}
-    \caption{ANF implementation of SNibble}
-    \label{fig:SNibble}
-\end{figure}
 
-\section{M-box}
-
-The M-box is the linear diffusion layer of the PRINCE cipher. Its main role is to spread the effect of each input bit across multiple output bits, so that small changes in the state affect a larger part of the cipher in later rounds. Unlike the S-box, the M-box does not provide non-linearity; instead, it performs a fixed linear transformation over the 64-bit state. In a classical implementation, this layer is applied as a binary matrix multiplication over $GF(2)$, where each output bit is computed as the XOR of selected input bits.
-
-The 64-bit state is divided into four 16-bit parts, and the M-box can be represented using a block diagonal matrix. Each block is formed using the $4 \times 4$ identity matrix $I_4$ and the $4 \times 4$ zero matrix $Z_4$ as shown below:
-
-\[
-I_4 =
-\begin{bmatrix}
-1 & 0 & 0 & 0 \\
-0 & 1 & 0 & 0 \\
-0 & 0 & 1 & 0 \\
-0 & 0 & 0 & 1
-\end{bmatrix},
-\qquad
-Z_4 =
-\begin{bmatrix}
-0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0
-\end{bmatrix}
-\qquad
-M_{16} =
-\begin{bmatrix}
-Z_4 & I_4 & I_4 & I_4 \\
-I_4 & Z_4 & I_4 & I_4 \\
-I_4 & I_4 & Z_4 & I_4 \\
-I_4 & I_4 & I_4 & Z_4
-\end{bmatrix}
-\]
-
-\[
-M =
-\begin{bmatrix}
-M_{16} & 0      & 0      & 0 \\
-0      & M_{16} & 0      & 0 \\
-0      & 0      & M_{16} & 0 \\
-0      & 0      & 0      & M_{16}
-\end{bmatrix}_{64 \times 64}
-\]
-
-A direct XOR-based implementation of the M-box is not suitable in a reversible quantum circuit because of line contamination. If an output bit is written directly onto a qubit that is still needed as an input for another output bit, the original value is destroyed and later computations become incorrect. One simple solution is to compute all output bits into a separate 64-bit scratch register, but this requires many additional ancilla qubits. To avoid this, the M-box is implemented in-place using Gaussian elimination over $GF(2)$. This method converts the matrix operation into a sequence of elementary row operations, where each row operation corresponds directly to a CNOT gate. Figure \ref{fig:gaussian_mbox} shows a mathematical proff of how gaussian elimination is applicable in the scenario and Figure \ref{fig:gaussian_mbox_pseudocode} shows Pseudo code for performing Gaussian elimination.
 
 \begin{figure}[h]
 \centering
@@ -642,111 +621,95 @@ M = E_1 E_2 \cdots E_t
 \label{fig:gaussian_mbox}
 \end{figure}
 
+
+\subsection{Quantum M-box Implementation}
+
+The M-box is the linear diffusion layer of the PRINCE cipher and is responsible for spreading bit changes across the internal state. Unlike the S-box, the M-box contains only linear XOR-based operations and can therefore be implemented efficiently using CNOT gates. 
+
+The M-layer is represented mathematically using binary matrices over $GF(2)$. The complete 64-bit transformation is constructed using repeated $16 \times 16$ diffusion blocks. 
+
+
+A direct implementation of the matrix multiplication would require additional workspace qubits. To reduce ancilla usage, the M-box is implemented in-place using Gaussian elimination over $GF(2)$, mathematical proof of this is shown at Figure \ref{fig:gaussian_mbox}. In this method, each elementary row operation corresponds directly to a CNOT gate, allowing the linear transformation to be realized reversibly without allocating a separate output register.
+
 \begin{figure}[H]
 \centering
-\fbox{
-\begin{minipage}{0.88\textwidth}
-\textbf{Pseudocode: Gaussian Elimination for M-box}
-
-\begin{enumerate}
-    \item Set $A \leftarrow M$ and create an empty CNOT list $L$.
-    \item For each column $col = 0$ to $63$, choose a pivot row with value 1.
-    \item Use row swaps if needed to bring the pivot to the diagonal.
-    \item For every row below the pivot with value 1, perform:
-    \[
-        A[row] \leftarrow A[row] \oplus A[col]
-    \]
-    and store $\text{CNOT}(q[col], q[row])$ in $L$.
-    \item Repeat the same process in reverse order for back substitution.
-    \item Apply all CNOT gates stored in $L$ to the quantum state register.
-\end{enumerate}
-\end{minipage}
-}
-\caption{Pseudocode for Gaussian elimination based M-box implementation}
-\label{fig:gaussian_mbox_pseudocode}
+\includegraphics[width=\linewidth]{Mbox.png}
+\caption{Quantum Circuit Implementation of the PRINCE M-box}
+\label{fig:quantum_mbox}
 \end{figure}
 
-Following the Pseudocode of Gaussian elimination mentioned in Figure \ref{fig:gaussian_mbox_pseudocode} we get a list of CNot operations to perform in an Order and doing so will result in implementation of Mbox without the need of any Ancilla lines. Figure \ref{fig:Mbox} shows the actual circuit implementation of this Mbox circuit.
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{Mbox.png}
-    \caption{Circuit implementation of Mbox using Gaussian Elimination}
-    \label{fig:Mbox}
-\end{figure}
-\chapter{Implementation Details and Setup}
-
-This chapter presents the practical aspects of the implementation of the reversible quantum Prince circuit and the Grover-based key search attack. It details the tools, libraries, and simulation environment used to build and run the quantum circuits, together with the assumptions and constraints considered during the implementation. The chapter also outlines design choices made to adapt to hardware and memory limitations, including a reduced key space for Grover's algorithm.
-
-\section{Logger Functions}
-
-It also includes, as a helper function, a gate logging mechanism for analyzing resource requirements of the quantum Prince implementation. This gate logger keeps track of the number and types of quantum gates applied during the construction and execution of a circuit, including but not limited to Pauli-X, CNOT, and Toffoli gates. Later on, it can be used for assessing gate complexity and performing comparisons among the various circuit components to support quantitative analysis of the whole implementation.
-
-\section{Implementation Environment}
-
-The proposed system was realized by a software-based quantum simulation approach to design and analyze the reversible S-AES circuit and the Grover-based key search attack. All experiments were conducted in a controlled hardware and software environment to ensure reproducibility and consistency of results.
-
-\subsection{Software Configuration}
-
-The following is a summary of the software environment used for implementation:
-\begin{itemize}
-\item Programming Language: Python 3.10
-\item Quantum Computing Framework: Qiskit SDK for quantum circuit design and simulation
-\item Numerical Computing Libraries: NumPy, Pandas
-\item Data Visualization Tools: Matplotlib, Seaborn
-\item Development and Execution Platform: Jupyter Notebook and Google Colab
-\end{itemize}
-
-\subsection{Hardware Configuration}
-
-The experiments were performed using a system with the following configuration:
-\begin{itemize}
-\item Processor: AMD Ryzen 9 CPU
-\item Graphics Processing Unit: NVIDIA GeForce RTX 2060
-\item System Memory: 16 GB RAM
-\item Type of Environment: Full software quantum simulation
-\end{itemize}
-\subsection{Qubit Distribution}
-
-In the proposed PRINCE quantum circuit, separate quantum registers are used for the state, key material, and auxiliary workspace required for reversible computation. The 64-bit state register stores the plaintext and intermediate cipher state, while the key registers store $k_0$, $k_1$, and $k_0'$. Additional ancilla qubits are required for reversible S-box computation and are returned to $|0\rangle$ after use. This separation helps maintain reversibility and allows the circuit to be used inside a Grover oracle.
-
-\begin{table}[h]
+\begin{table}[H]
 \centering
-\caption{Qubit Allocation in Quantum PRINCE Implementation}
-\label{tab:qubit-layout-prince}
+\caption{Quantum Resource Requirement for One PRINCE M-layer}
+\label{tab:mbox_resource}
 \begin{tabular}{|c|c|p{7cm}|}
 \hline
-\textbf{Qubit Range} & \textbf{Purpose} & \textbf{Description} \\
+\textbf{Resource} & \textbf{Count} & \textbf{Description} \\
 \hline
-0--63 & State / Plaintext & Represents the 64-bit PRINCE state, initially loaded with plaintext and later holding intermediate values and ciphertext \\
+Input Qubits & 64 & State qubits representing the 64-bit PRINCE internal state \\
 \hline
-64--287 & S-box Ancilla & 224 ancilla qubits used for reversible computation of the 16 S-boxes in one S-layer \\
+Ancilla Qubits & 0 & The M-layer is implemented in-place without requiring additional ancilla qubits \\
 \hline
-288--351 & $k_0$ Register & Stores the first 64-bit key half used during initial whitening \\
+Pauli-X Gates & 0 & No constant bit inversions are required in the linear diffusion layer \\
 \hline
-352--415 & $k_1$ Register & Stores the second 64-bit key half used in the round-key additions and final key addition \\
+CNOT Gates & 224 & Used to realize the linear matrix transformation through Gaussian elimination \\
 \hline
-416--479 & $k_0'$ Register & Stores the modified key derived from $k_0$ and used during final whitening \\
+Toffoli Gates & 0 & The M-layer contains only linear XOR operations and therefore requires no non-linear gates \\
+\hline
+Total Quantum Gates & 224 & Total number of quantum gates required for one complete M-layer \\
 \hline
 \end{tabular}
 \end{table}
 
+The PRINCE M-layer is implemented as a reversible linear transformation over the 64-bit internal state. Since the transformation contains only XOR-based operations, the complete circuit can be realized entirely using CNOT gates. To avoid the use of additional output registers, the matrix operation is implemented in-place using Gaussian elimination over $GF(2)$. Each elementary row operation corresponds directly to a CNOT gate, allowing the M-layer to be implemented efficiently without requiring ancilla qubits or non-linear Toffoli gates.
 
 
-\subsection{Simulation Constraints}
+\subsection{Round-wise Gate Distribution}
 
-The complete PRINCE-based Grover attack uses a 128-bit key register, which means that a full quantum simulation would require representing a superposition over $2^{128}$ possible keys. This is far beyond the memory and computational capacity of classical quantum simulators. Therefore, the full Grover attack is not simulated directly in this work. Instead, the PRINCE encryption circuit is verified separately for correctness, and the Grover iteration circuit is constructed for resource estimation. This allows the qubit count, gate count, circuit depth, T-gate count, and T-depth to be evaluated without attempting an infeasible full-state simulation.
+The gate count of the PRINCE circuit is analyzed round by round. Each forward and inverse round contains an S-layer, M-layer, round constant addition, and key addition. The number of CNOT and Toffoli gates remains fixed for each round, while the number of X gates changes depending on the Hamming weight of the round constant.
 
-
-\section{Evaluation Metrics}
-
-For evaluating the proposed quantum PRINCE implementation and the Grover-based key search circuit, resource estimation is used as the main evaluation method. Since the full 128-bit Grover attack cannot be simulated on classical hardware, the analysis focuses on circuit-level metrics that indicate the cost and feasibility of the quantum implementation.
-
-The results include the total number of qubits, total gate count, gate-wise distribution, and logical circuit depth for the PRINCE encryption circuit and for one Grover iteration. In addition, Clifford+T resource metrics are reported, including the total number of Clifford gates, total number of T gates, T-depth, and total Clifford+T depth. These metrics help compare the normal PRINCE circuit, the Clifford-decomposed version, the efficient implementation, and the Grover iteration circuit.
+\begin{table}[h]
+\centering
+\caption{Round-wise Gate Distribution of PRINCE}
+\label{tab:round_gate_distribution}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Stage} & \textbf{X Gates} & \textbf{CNOT Gates} & \textbf{Toffoli Gates} & \textbf{Total Gates} \\
+\hline
+Initial Key Addition & 0 & 128 & 0 & 128 \\
+\hline
+Round 1 & 105 & 1168 & 640 & 1913 \\
+\hline
+Round 2 & 105 & 1168 & 640 & 1913 \\
+\hline
+Round 3 & 110 & 1168 & 640 & 1918 \\
+\hline
+Round 4 & 107 & 1168 & 640 & 1915 \\
+\hline
+Round 5 & 113 & 1168 & 640 & 1921 \\
+\hline
+Middle Layer & 160 & 1984 & 1280 & 3424 \\
+\hline
+Inverse Round 6 & 119 & 1168 & 640 & 1927 \\
+\hline
+Inverse Round 7 & 105 & 1168 & 640 & 1913 \\
+\hline
+Inverse Round 8 & 108 & 1168 & 640 & 1916 \\
+\hline
+Inverse Round 9 & 107 & 1168 & 640 & 1915 \\
+\hline
+Inverse Round 10 & 111 & 1168 & 640 & 1919 \\
+\hline
+Final Whitening & 32 & 128 & 0 & 160 \\
+\hline
+\textbf{Total} & \textbf{1282} & \textbf{13920} & \textbf{7680} & \textbf{22882} \\
+\hline
+\end{tabular}
+\end{table}
 
 \section{Resource Estimation under Parallelism}
 
-Grover's algorithm provides a quadratic speedup for exhaustive key search, but a complete Grover search over the full PRINCE key space still requires a very large sequential circuit depth. One way to reduce the required depth is to use \textbf{inner parallelization}. In this method, the total key space is divided into several disjoint subsets, and each subset is searched independently on a separate quantum machine. The machines do not cooperate during a Grover iteration; instead, each machine runs Grover search on a smaller portion of the key space.
+Grover's algorithm provides a quadratic speedup for exhaustive key search, but a complete Grover search over the full PRINCE key space still requires a very large sequential circuit depth. One way to reduce the required depth is to use \textbf{inner parallelization}. The machines do not cooperate during a Grover iteration; instead, each machine runs Grover search on a smaller portion of the key space.
 
 Let the PRINCE key size be $k=128$. The full key space has size $2^k$. Assume that one Grover iteration for the PRINCE oracle has gate cost $O_g$ and circuit depth $O_d$. If $M=2^m$ quantum machines are used in parallel, then each machine searches only $2^{k-m}$ keys. Therefore, the approximate number of Grover iterations required per machine is
 \[
@@ -816,7 +779,7 @@ Very high parallelism is required to satisfy a shallow depth bound. \\
 $2^{64}$ &
 $\approx 2^{21.26}$ &
 $\approx 2^{89.79}$ &
-Fewer machines are needed, but the total gate cost remains extremely large. \\
+Fewer machines are needed, but the total gate cost remains large. \\
 \hline
 
 \end{tabular}
@@ -830,6 +793,49 @@ This analysis shows the main trade-off in parallel Grover search. Parallelism re
 
 \cleardoublepage
 \onehalfspacing
+
+
+
+
+
+
+
+\chapter{Implementation Details and Setup}
+
+This chapter presents the practical aspects of the implementation of the reversible quantum Prince circuit and the Grover-based key search attack. It details the tools, libraries, and simulation environment used to build and run the quantum circuits, together with the assumptions and constraints considered during the implementation. The chapter also outlines design choices made to adapt to hardware and memory limitations, including a reduced key space for Grover's algorithm.
+
+\subsection{Software Configuration}
+
+The following is a summary of the software environment used for implementation:
+\begin{itemize}
+\item Programming Language: Python 3.10
+\item Quantum Computing Framework: Qiskit SDK for quantum circuit design and simulation
+\item Numerical Computing Libraries: NumPy, Pandas
+\item Data Visualization Tools: Matplotlib, Seaborn
+\item Development and Execution Platform: Jupyter Notebook and Google Colab
+\end{itemize}
+
+\subsection{Hardware Configuration}
+
+The experiments were performed using a system with the following configuration:
+\begin{itemize}
+\item Processor: AMD Ryzen 9 CPU
+\item Graphics Processing Unit: NVIDIA GeForce RTX 2060
+\item System Memory: 16 GB RAM
+\item Type of Environment: Full software quantum simulation
+\end{itemize}
+
+\subsection{Simulation Constraints}
+
+The complete PRINCE-based Grover attack uses a 128-bit key register, which means that a full quantum simulation would require representing a superposition over $2^{128}$ possible keys. This is far beyond the memory and computational capacity of classical quantum simulators. Therefore, the full Grover attack is not simulated directly in this work. Instead, the PRINCE encryption circuit is verified separately for correctness, and the Grover iteration circuit is constructed for resource estimation. This allows the qubit count, gate count, circuit depth, T-gate count, and T-depth to be evaluated without attempting an infeasible full-state simulation.
+
+
+\section{Evaluation Metrics}
+
+For evaluating the proposed quantum PRINCE implementation and the Grover-based key search circuit, resource estimation is used as the main evaluation method. Since the full 128-bit Grover attack cannot be simulated on classical hardware, the analysis focuses on circuit-level metrics that indicate the cost and feasibility of the quantum implementation. The results include the total number of qubits, total gate count, gate-wise distribution, and logical circuit depth for the PRINCE encryption circuit and for one Grover iteration. In addition, Clifford+T resource metrics are reported, including the total number of Clifford gates, total number of T gates, T-depth, and total Clifford+T depth. 
+
+
+
 
 \chapter{RESULTS AND DISCUSSION}
 
@@ -854,8 +860,6 @@ The correctness of the proposed quantum PRINCE implementation is verified by com
 }
 \end{table}
 
-\section{Alpha Reflection Verification}
-
 PRINCE has a special property known as alpha reflection. This property allows decryption to be performed using a closely related structure to encryption by modifying the key material. In this work, the ciphertext obtained from encryption is again passed through the decryption structure using the alpha-reflection relation. The output matches the original plaintext, confirming that the implemented forward and inverse structures are consistent.
 
 \begin{table}[h]
@@ -867,49 +871,6 @@ PRINCE has a special property known as alpha reflection. This property allows de
 \textbf{Plaintext} & \textbf{Ciphertext} & \textbf{Recovered Plaintext} & \textbf{Result} \\
 \hline
 0x1111111111111111 & 0x44FBFF21F4BA60E1 & 0x1111111111111111 & PASS \\
-\hline
-\end{tabular}
-\end{table}
-
-\section{Round-wise Gate Distribution}
-
-The gate count of the PRINCE circuit is analyzed round by round. Each forward and inverse round contains an S-layer, M-layer, round constant addition, and key addition. The number of CNOT and Toffoli gates remains fixed for each round, while the number of X gates changes depending on the Hamming weight of the round constant.
-
-\begin{table}[h]
-\centering
-\caption{Round-wise Gate Distribution of PRINCE}
-\label{tab:round_gate_distribution}
-\begin{tabular}{|c|c|c|c|c|}
-\hline
-\textbf{Stage} & \textbf{X Gates} & \textbf{CNOT Gates} & \textbf{Toffoli Gates} & \textbf{Total Gates} \\
-\hline
-Initial Key Addition & 0 & 128 & 0 & 128 \\
-\hline
-Round 1 & 105 & 1168 & 640 & 1913 \\
-\hline
-Round 2 & 105 & 1168 & 640 & 1913 \\
-\hline
-Round 3 & 110 & 1168 & 640 & 1918 \\
-\hline
-Round 4 & 107 & 1168 & 640 & 1915 \\
-\hline
-Round 5 & 113 & 1168 & 640 & 1921 \\
-\hline
-Middle Layer & 160 & 1984 & 1280 & 3424 \\
-\hline
-Inverse Round 6 & 119 & 1168 & 640 & 1927 \\
-\hline
-Inverse Round 7 & 105 & 1168 & 640 & 1913 \\
-\hline
-Inverse Round 8 & 108 & 1168 & 640 & 1916 \\
-\hline
-Inverse Round 9 & 107 & 1168 & 640 & 1915 \\
-\hline
-Inverse Round 10 & 111 & 1168 & 640 & 1919 \\
-\hline
-Final Whitening & 32 & 128 & 0 & 160 \\
-\hline
-\textbf{Total} & \textbf{1282} & \textbf{13920} & \textbf{7680} & \textbf{22882} \\
 \hline
 \end{tabular}
 \end{table}
@@ -932,81 +893,7 @@ To estimate fault-tolerant quantum resources, the PRINCE circuit is decomposed i
 \end{table}
 
 
-\begin{figure}[H]
-\centering
-\fbox{
-\begin{minipage}{0.92\textwidth}
-\setlength{\abovedisplayskip}{3pt}
-\setlength{\belowdisplayskip}{3pt}
-
-\textbf{Mathematical Gate Count Calculation}
-
-\begin{align*}
-\textbf{1 S-box:}\qquad
-X &= 5, &
-CNOT &= 55, &
-Toffoli &= 40 \\[3pt]
-\textbf{1 S-layer:}\qquad
-X &= 16 \times 5 = 80, &
-CNOT &= 16 \times 55 = 880, &
-Toffoli &= 640 \\[3pt]
-\textbf{1 M-layer:}\qquad
-X &= 0, &
-CNOT &= 224, &
-Toffoli &= 0
-\end{align*}
-
-\begin{align*}
-\textbf{Forward round:}\qquad
-X &= 80 + popcount(RC_i), \\
-CNOT &= 880 + 224 + 64 = 1168, \\
-Toffoli &= 640
-\end{align*}
-
-\begin{align*}
-\textbf{Rounds 1--5:}\qquad
-\sum popcount(RC_1 \ldots RC_5) &= 140, \\
-X &= 5 \times 80 + 140 = 540, \\
-CNOT &= 5 \times 1168 = 5840, \\
-Toffoli &= 5 \times 640 = 3200
-\end{align*}
-
-\begin{align*}
-\textbf{Middle layer:}\qquad
-X &= 80 + 80 = 160, \\
-CNOT &= 880 + 224 + 880 = 1984, \\
-Toffoli &= 640 + 640 = 1280
-\end{align*}
-
-\begin{align*}
-\textbf{Rounds 6--10:}\qquad
-\sum popcount(RC_6 \ldots RC_{10}) &= 150, \\
-X &= 5 \times 80 + 150 = 550, \\
-CNOT &= 5 \times 1168 = 5840, \\
-Toffoli &= 5 \times 640 = 3200
-\end{align*}
-
-\begin{align*}
-\textbf{Whitening:}\qquad
-Pre &= k_0 \oplus k_1 = 128 \; CNOT, \\
-Post &= RC_{11} \oplus k_1 \oplus k_0' = 32 \; X + 128 \; CNOT
-\end{align*}
-
-\begin{align*}
-\textbf{Full PRINCE:}\qquad
-X &= 540 + 160 + 550 + 32 = 1282, \\
-CNOT &= 128 + 5840 + 1984 + 5840 + 128 = 13920, \\
-Toffoli &= 3200 + 1280 + 3200 = 7680, \\
-Total &= 1282 + 13920 + 7680 = 22882
-\end{align*}
-
-\end{minipage}
-}
-\caption{Mathematical gate count calculation for PRINCE encryption}
-\label{fig:math_prince_calc}
-\end{figure}
-
-\begin{figure}[H]
+\begin{figure}[h]
 \centering
 \fbox{
 \begin{minipage}{0.92\textwidth}
@@ -1108,16 +995,11 @@ One Grover Iteration with Clifford Decomposition & 607 & -- & 11963 & 110180 & 4
 \hline
 \end{tabularx}
 \end{table}
+    
 
-
-\section{Toy PRINCE}
+\chapter{Toy PRINCE}
 
 The complete PRINCE Grover circuit cannot be simulated over the full 128-bit key space on a classical machine. To demonstrate the same idea end-to-end, a reduced cipher named \textbf{Toy PRINCE} was implemented. The purpose of this toy construction is not to replace PRINCE, but to provide a small model in which the encryption function, alpha-reflection property, oracle marking, Grover amplitude amplification, and final key recovery can all be verified by direct simulation.
-
-Toy PRINCE uses a 4-bit state and an 8-bit key. The 8-bit key is divided into two 4-bit halves, $k_0$ and $k_1$, and a derived key $k_0'$ is generated from $k_0$ in the same spirit as the PRINCE key schedule. The PRINCE 4-bit S-box is reused directly, because the complete toy state is one nibble. A small involutive 4-bit M-box is used as the linear diffusion layer, so that applying the M-box twice gives the identity. The round constants are reduced to three 4-bit constants:
-\[
-RC_0 = 0,\qquad RC_1 = 7,\qquad RC_2 = D.
-\]
 
 \begin{table}[H]
 \centering
@@ -1141,6 +1023,13 @@ Search space & $2^8 = 256$ keys & Small enough for full state-vector Grover simu
 \hline
 \end{tabularx}
 \end{table}
+
+
+Toy PRINCE uses a 4-bit state and an 8-bit key. The 8-bit key is divided into two 4-bit halves, $k_0$ and $k_1$, and a derived key $k_0'$ is generated from $k_0$ in the same spirit as the PRINCE key schedule. The PRINCE 4-bit S-box is reused directly, because the complete toy state is one nibble. A small involutive 4-bit M-box is used as the linear diffusion layer, so that applying the M-box twice gives the identity. The round constants are reduced to three 4-bit constants:
+\[
+RC_0 = 0,\qquad RC_1 = 7,\qquad RC_2 = D.
+\]
+
 
 The implemented encryption structure is
 \[
@@ -1209,7 +1098,7 @@ After correctness verification, Toy PRINCE was embedded in a Grover key-search e
 
 The Grover simulation starts with a uniform superposition over all 256 keys, so each key initially has probability $1/256 = 0.003906$. The oracle flips the phase of key $0x6D$, and the diffuser then amplifies its amplitude. The simulation was stopped when the highest key probability crossed the selected threshold of $0.99$. The correct key reached probability $0.999947$ after 12 Grover iterations.
 
-\begin{table}[H]
+\begin{table}
 \centering
 \caption{Toy PRINCE Grover Probability Amplification}
 \label{tab:toy_prince_grover_summary}
@@ -1235,7 +1124,7 @@ The Grover simulation starts with a uniform superposition over all 256 keys, so 
 \end{tabularx}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}
 \centering
 \includegraphics[width=\textwidth]{toy_prince_grover_attack_full_circuit.png}
 \caption{Block-level circuit for one Toy PRINCE Grover attack iteration}
@@ -1246,7 +1135,7 @@ The Toy PRINCE experiment confirms the complete workflow used for the main PRINC
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=\linewidth]{Grover-amplification.png}
+    \includegraphics[width=0.65\linewidth]{Grover-amplification.png}
     \caption{Grover amplification}
     \label{fig:GroverAmplification}
 \end{figure}
@@ -1255,15 +1144,15 @@ The Toy PRINCE experiment confirms the complete workflow used for the main PRINC
 
 This thesis presented a reversible quantum implementation of the PRINCE lightweight block cipher and analyzed its use within a Grover-based key search framework. A complete reversible circuit for the PRINCE encryption structure was constructed by implementing the S-box layer, M-layer, round constants, key addition operations, and the PRINCE key schedule using reversible quantum operations. The resulting circuit preserves the functional behavior of the classical PRINCE cipher while satisfying the reversibility requirements of quantum computation.
 
-The work further demonstrated how the reversible PRINCE circuit can be embedded into a Grover oracle for quantum exhaustive key search. One Grover iteration was constructed using oracle computation, phase marking, uncomputation, and the Grover diffuser. Since a complete simulation over the full 128-bit key space would require representing $2^{128}$ quantum states, full-state simulation was not feasible on classical hardware. Therefore, the study focused on circuit construction, correctness verification, and quantum resource estimation.
+The project also showed how reversible PRINCE circuit can be implemented within the oracle circuit of the Grover algorithm to enable the quantum exhaustive search for cryptographic keys. A single Grover iteration was implemented with oracle computation, phase inversion, uncomputation, and Grover diffuser. However, as a full simulation over the whole 128-bit space of the keys would involve $2^{128}$ states, a full-state simulation was not possible on classical computer. Hence, the project concentrated on designing a circuit and evaluating its correctness and resources.
 
-The correctness of the implementation was verified by comparing the outputs of the classical and quantum PRINCE implementations and by validating the alpha-reflection property of PRINCE. Resource analysis was then performed for both the PRINCE encryption circuit and one Grover iteration. Metrics such as qubit count, gate count, circuit depth, Clifford gate count, T-gate count, and T-depth were evaluated. The results show that although Grover’s algorithm theoretically reduces the effective security of a 128-bit key to approximately 64 bits, the practical realization of such an attack requires a very large number of quantum gates, deep circuits, and substantial fault-tolerant quantum resources.
+Correctness was proven by testing the equivalence between the output of the classic and quantum PRINCE implementations, as well as by demonstrating the alpha-reflection properties of PRINCE. The next step in the research was a resource analysis for the quantum PRINCE encryption circuit and a single Grover iteration. Such metrics as number of qubits, total gate count, number of layers in the circuit, number of Clifford gates, T gates, and T-depth were calculated. As it turns out, although Grover's algorithm enables an attacker to reduce the security level of a 128-bit key to 64 bits from a theoretical standpoint, its realization involves a huge number of gates, circuit depth, and fault-tolerant resources.
 
-The study highlights the gap between the theoretical capability of quantum search algorithms and the practical challenges involved in implementing large-scale quantum cryptanalysis. It also demonstrates the importance of reversible circuit design and detailed quantum resource estimation when evaluating the post-quantum security of symmetric block ciphers.
+This work emphasizes that while there have been many theoretical studies on the ability of quantum search algorithms to break symmetric block ciphers, they do not take into account the complexities of such an operation on a practical scale. This study further proves that the post-quantum strength of symmetric block ciphers can be analyzed by designing a reversible circuit and estimating quantum resources.
 
-Several directions for future work arise from this research. One important direction is the optimization of the PRINCE quantum circuit to reduce qubit usage, Toffoli count, T-gate count, and circuit depth. Improved S-box constructions and more efficient in-place linear layer implementations could significantly reduce overall resource requirements. Another direction involves implementing reduced-round or optimized variants of PRINCE on real quantum hardware or advanced fault-tolerant simulators as quantum technology continues to improve.
+There are several avenues that could be taken up as future work due to this work. The first area of focus is reducing the amount of qubits used, the number of Toffolis, the number of T-gates, and the depth of the quantum circuit designed for PRINCE. Improved S-boxes and faster implementation of linear layers in place can contribute greatly to reducing the amount of resources used.
 
-Future work may also extend this methodology to other lightweight block ciphers such as PRESENT, GIFT, or Midori to compare their quantum resource requirements under Grover-based attacks. In addition, incorporating realistic noise models, quantum error correction overheads, and hardware connectivity constraints would provide a more practical estimate of the feasibility of quantum cryptanalysis against modern symmetric cryptographic systems.
+Further research can apply this methodological approach to evaluate quantum resource consumption for lightweight block ciphers like PRESENT, GIFT, or Midori in terms of Grover’s attack. Moreover, considering realistic noise, applying quantum error correction and taking into account hardware limitations would allow us to assess whether or not quantum cryptanalysis is feasible.
 
 %--------------------References---------------------
 \cleardoublepage
@@ -1275,51 +1164,63 @@ Future work may also extend this methodology to other lightweight block ciphers 
 \singlespacing
 \setlength{\parskip}{0.6\baselineskip}
 
-Grover, L. K. (1996) ‘A Fast Quantum Mechanical Algorithm for Database Search’,
+\begin{enumerate}
+
+\item Grover, L. K. (1996) ‘A Fast Quantum Mechanical Algorithm for Database Search’,
 \textit{Proceedings of the 28th Annual ACM Symposium on Theory of Computing (STOC)},
 pp. 212–219.
 
-Grover, L. K. (1997) ‘Quantum Mechanics Helps in Searching for a Needle in a Haystack’,
+\item Grover, L. K. (1997) ‘Quantum Mechanics Helps in Searching for a Needle in a Haystack’,
 \textit{Physical Review Letters}, Vol. 79, No. 2, pp. 325–328.
 
-Nielsen, M. A. and Chuang, I. L. (2010)
+\item Nielsen, M. A. and Chuang, I. L. (2010)
 \textit{Quantum Computation and Quantum Information},
 Cambridge University Press.
 
-Grassl, M., Langenberg, B., Roetteler, M. and Steinwandt, R. (2016)
+\item Grassl, M., Langenberg, B., Roetteler, M. and Steinwandt, R. (2016)
 ‘Applying Grover’s Algorithm to AES: Quantum Resource Estimates’,
 \textit{Post-Quantum Cryptography (PQCrypto)},
 Lecture Notes in Computer Science, Springer.
 
-Almazrooie, M., Samsudin, A. and Salleh, R. (2018)
+\item Almazrooie, M., Samsudin, A. and Salleh, R. (2018)
 ‘Quantum Grover Attack on the Simplified-AES’,
 \textit{International Journal of Advanced Computer Science and Applications},
 Vol. 9, No. 11, pp. 1–8.
 
-Almazrooie, M. and Samsudin, A. (2019)
+\item Almazrooie, M. and Samsudin, A. (2019)
 ‘Grover on Simplified AES’,
 \textit{Journal of Telecommunication, Electronic and Computer Engineering},
 Vol. 11, No. 2–3, pp. 45–52.
 
-National Institute of Standards and Technology (NIST) (2001)
+\item National Institute of Standards and Technology (NIST) (2001)
 ‘Advanced Encryption Standard (AES)’,
 FIPS PUB 197.
 
-Stallings, W. (2017)
+\item Stallings, W. (2017)
 \textit{Cryptography and Network Security: Principles and Practice},
 7th Edition, Pearson Education.
 
-Bernstein, D. J. and Lange, T. (2017)
+\item Bernstein, D. J. and Lange, T. (2017)
 ‘Post-Quantum Cryptography’,
 \textit{Nature}, Vol. 549, pp. 188–194.
 
-IBM Quantum (2023)
+\item IBM Quantum (2023)
 ‘Qiskit: An Open-source Framework for Quantum Computing’,
 Available at: \textit{https://qiskit.org}.
 
-Cross, A. W., Bishop, L. S., Sheldon, S., Nation, P. D. and Gambetta, J. M. (2018)
+\item Cross, A. W., Bishop, L. S., Sheldon, S., Nation, P. D. and Gambetta, J. M. (2018)
 ‘Open Quantum Assembly Language’,
 \textit{arXiv preprint arXiv:1707.03429}.
+
+\item Kim, P., Han, D. and Jeong, K. C. (2018)
+‘Time--Space Complexity of Quantum Search Algorithms in Symmetric Cryptanalysis: Applying to AES and SHA-2’,
+\textit{Quantum Information Processing},
+Vol. 17, No. 12, pp. 339,
+Springer.
+
+
+\end{enumerate}
+
 
 
 
